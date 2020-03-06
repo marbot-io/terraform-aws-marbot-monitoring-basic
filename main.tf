@@ -120,7 +120,7 @@ resource "aws_cloudwatch_event_rule" "monitoring_jump_start" {
 resource "aws_cloudwatch_event_target" "monitoring_jump_start" {
   count = var.enabled ? 1 : 0
 
-  rule      = join("", aws_cloudwatch_event_rule.monitoring_jump_start.*.arn)
+  rule      = join("", aws_cloudwatch_event_rule.monitoring_jump_start.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
   input     = <<JSON

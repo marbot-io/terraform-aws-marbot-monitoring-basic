@@ -11,9 +11,9 @@ provider "aws" {}
 
 module "marbot-monitoring-basic" {
   source  = "marbot-io/marbot-monitoring-basic/aws"
-  #version = "x.y.z"
+  #version = "x.y.z"    # we recommend to pin the version
 
-  endpoint_id      = "" # to get this value: select a Slack channel where marbot belongs to and send a message like this: "@marbot show me my endpoint id"
+  endpoint_id      = "" # to get this value, select a Slack channel where marbot belongs to and send a message like this: "@marbot show me my endpoint id"
   budget_threshold = 10 # in USD (optional)
 }
 ```
@@ -22,3 +22,18 @@ module "marbot-monitoring-basic" {
 terraform init
 terraform apply
 ```
+
+## Update procedure
+
+1. Update the `version`
+2. Run the following commands:
+```
+terraform get
+terraform apply
+```
+
+## License
+All modules are published under Apache License Version 2.0.
+
+## About
+A [marbot.io](https://marbot.io/) project. Engineered by [widdix](https://widdix.net).
