@@ -1,6 +1,6 @@
 # AWS basics monitoring
 
-Connects you to all relevant sources of errors and warnings published by AWS services.
+Connects you to all relevant sources of errors, warnings, and notifications published by AWS services, and forwards them to Slack managed by [marbot](https://marbot.io/).
 
 ## Usage
 
@@ -9,8 +9,9 @@ Connects you to all relevant sources of errors and warnings published by AWS ser
 ```
 provider "aws" {}
 
-module "basic" {
-  source           = "git::https://github.com/marbot-io/terraform-aws-marbot-monitoring-basic"
+module "marbot-monitoring-basic" {
+  source  = "marbot-io/marbot-monitoring-basic/aws"
+  #version = "x.y.z"
 
   endpoint_id      = "" # to get this value: select a Slack channel where marbot belongs to and send a message like this: "@marbot show me my endpoint id"
   budget_threshold = 10 # in USD (optional)
