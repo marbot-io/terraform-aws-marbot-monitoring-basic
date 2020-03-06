@@ -17,10 +17,13 @@ data "aws_region" "current" {}
 ##########################################################################
 
 resource "aws_sns_topic" "marbot" {
+  count = var.enabled ? 1 : 0
 }
 
 resource "aws_sns_topic_policy" "marbot" {
-  arn    = aws_sns_topic.marbot.arn
+  count = var.enabled ? 1 : 0
+
+  arn    = join("", aws_sns_topic.marbot.*.arn)
   policy = data.aws_iam_policy_document.topic_policy.json
 }
 
@@ -29,7 +32,7 @@ data "aws_iam_policy_document" "topic_policy" {
     sid       = "Sid1"
     effect    = "Allow"
     actions   = ["sns:Publish"]
-    resources = [aws_sns_topic.marbot.arn]
+    resources = [join("", aws_sns_topic.marbot.*.arn)]
 
     principals {
       type        = "Service"
@@ -47,7 +50,7 @@ data "aws_iam_policy_document" "topic_policy" {
     sid       = "Sid2"
     effect    = "Allow"
     actions   = ["sns:Publish"]
-    resources = [aws_sns_topic.marbot.arn]
+    resources = [join("", aws_sns_topic.marbot.*.arn)]
 
     principals {
       type        = "AWS"
@@ -65,7 +68,7 @@ data "aws_iam_policy_document" "topic_policy" {
     sid      = "Sid3"
     effect   = "Allow"
     actions  = ["sns:Publish"]
-    resources = [aws_sns_topic.marbot.arn]
+    resources = [join("", aws_sns_topic.marbot.*.arn)]
 
     principals {
       type        = "Service"
@@ -82,8 +85,9 @@ data "aws_iam_policy_document" "topic_policy" {
 
 resource "aws_sns_topic_subscription" "marbot" {
   depends_on = [aws_sns_topic_policy.marbot]
+  count      = var.enabled ? 1 : 0
 
-  topic_arn              = aws_sns_topic.marbot.arn
+  topic_arn              = join("", aws_sns_topic.marbot.*.arn)
   protocol               = "https"
   endpoint               = "https://api.marbot.io/${var.stage}/endpoint/${var.endpoint_id}"
   endpoint_auto_confirms = true
@@ -107,15 +111,18 @@ JSON
 
 resource "aws_cloudwatch_event_rule" "monitoring_jump_start" {
   depends_on = [aws_sns_topic_subscription.marbot]
+  count      = var.enabled ? 1 : 0
 
   description         = "Monitoring Jump Start connection (created by marbot)"
   schedule_expression = "rate(30 days)"
 }
 
 resource "aws_cloudwatch_event_target" "monitoring_jump_start" {
-  rule      = aws_cloudwatch_event_rule.monitoring_jump_start.name
+  count = var.enabled ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.monitoring_jump_start.*.arn)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
   input     = <<JSON
 {
   "Type": "monitoring-jump-start-tf-connection",
@@ -142,7 +149,7 @@ resource "random_id" "id8" {
 
 resource "aws_cloudwatch_metric_alarm" "trusted_advisor_cost_optimization" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor) ? 1 : 0
+  count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor && var.enabled) ? 1 : 0
 
   alarm_name          = "marbot-cost-optimization-${random_id.id8.hex}"
   alarm_description   = "Trusted Advisor Cost Optimization checks are red (created by marbot)."
@@ -153,8 +160,8 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_cost_optimization" {
   evaluation_periods  = 1
   comparison_operator = "GreaterThanThreshold"
   threshold           = 0
-  alarm_actions       = [aws_sns_topic.marbot.arn]
-  ok_actions          = [aws_sns_topic.marbot.arn]
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  ok_actions          = [join("", aws_sns_topic.marbot.*.arn)]
   dimensions          = {
     Category = "Cost Optimization"
   }
@@ -164,7 +171,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_cost_optimization" {
 
 resource "aws_cloudwatch_metric_alarm" "trusted_advisor_fault_tolerance" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor) ? 1 : 0
+  count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor && var.enabled) ? 1 : 0
 
   alarm_name          = "marbot-fault-tolerance-${random_id.id8.hex}"
   alarm_description   = "Trusted Advisor Fault Tolerance checks are red (created by marbot)."
@@ -175,8 +182,8 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_fault_tolerance" {
   evaluation_periods  = 1
   comparison_operator = "GreaterThanThreshold"
   threshold           = 0
-  alarm_actions       = [aws_sns_topic.marbot.arn]
-  ok_actions          = [aws_sns_topic.marbot.arn]
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  ok_actions          = [join("", aws_sns_topic.marbot.*.arn)]
   dimensions          = {
     Category = "Fault Tolerance"
   }
@@ -186,7 +193,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_fault_tolerance" {
 
 resource "aws_cloudwatch_metric_alarm" "trusted_advisor_performance" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor) ? 1 : 0
+  count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor && var.enabled) ? 1 : 0
 
   alarm_name          = "marbot-performance-${random_id.id8.hex}"
   alarm_description   = "Trusted Advisor Performance checks are red (created by marbot)."
@@ -197,8 +204,8 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_performance" {
   evaluation_periods  = 1
   comparison_operator = "GreaterThanThreshold"
   threshold           = 0
-  alarm_actions       = [aws_sns_topic.marbot.arn]
-  ok_actions          = [aws_sns_topic.marbot.arn]
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  ok_actions          = [join("", aws_sns_topic.marbot.*.arn)]
   dimensions          = {
     Category = "Performance"
   }
@@ -208,7 +215,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_performance" {
 
 resource "aws_cloudwatch_metric_alarm" "trusted_advisor_security" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor) ? 1 : 0
+  count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor && var.enabled) ? 1 : 0
 
   alarm_name          = "marbot-security-${random_id.id8.hex}"
   alarm_description   = "Trusted Advisor Security checks are red (created by marbot)."
@@ -219,8 +226,8 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_security" {
   evaluation_periods  = 1
   comparison_operator = "GreaterThanThreshold"
   threshold           = 0
-  alarm_actions       = [aws_sns_topic.marbot.arn]
-  ok_actions          = [aws_sns_topic.marbot.arn]
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  ok_actions          = [join("", aws_sns_topic.marbot.*.arn)]
   dimensions          = {
     Category = "Security"
   }
@@ -230,7 +237,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_security" {
 
 resource "aws_cloudwatch_metric_alarm" "trusted_advisor_service_limits" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor) ? 1 : 0
+  count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor && var.enabled) ? 1 : 0
 
   alarm_name          = "marbot-service-limits-${random_id.id8.hex}"
   alarm_description   = "Trusted Advisor Service Limits checks are red (created by marbot)."
@@ -241,8 +248,8 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_service_limits" {
   evaluation_periods  = 1
   comparison_operator = "GreaterThanThreshold"
   threshold           = 0
-  alarm_actions       = [aws_sns_topic.marbot.arn]
-  ok_actions          = [aws_sns_topic.marbot.arn]
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  ok_actions          = [join("", aws_sns_topic.marbot.*.arn)]
   dimensions          = {
     Category = "Service Limits"
   }
@@ -257,7 +264,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_service_limits" {
 # TODO Terraform bug: Error fetching subscriptions for topic ***: AuthorizationError: User: *** is not authorized to perform: SNS:ListSubscriptionsByTopic on resource: *** status code: 403, request id: ***
 #resource "aws_sns_topic_subscription" "ami_update_notification_ecs_optimized" {
 #  depends_on = [aws_sns_topic_subscription.marbot]
-#  count      = (data.aws_region.current.name == "us-east-1" && var.ami_update_notification_ecs_optimized) ? 1 : 0
+#  count      = (data.aws_region.current.name == "us-east-1" && var.ami_update_notification_ecs_optimized && var.enabled) ? 1 : 0
 #
 #  topic_arn               = "arn:aws:sns:us-east-1:177427601217:ecs-optimized-amazon-ami-update"
 #  protocol                = "https"
@@ -284,7 +291,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_service_limits" {
 # TODO Terraform bug: Error fetching subscriptions for topic ***: AuthorizationError: User: *** is not authorized to perform: SNS:ListSubscriptionsByTopic on resource: *** status code: 403, request id: ***
 #resource "aws_sns_topic_subscription" "ami_update_notification_amazon_linux" {
 #  depends_on = [aws_sns_topic_subscription.marbot]
-#  count      = (data.aws_region.current.name == "us-east-1" && var.ami_update_notification_amazon_linux) ? 1 : 0
+#  count      = (data.aws_region.current.name == "us-east-1" && var.ami_update_notification_amazon_linux && var.enabled) ? 1 : 0
 #
 #  topic_arn               = "arn:aws:sns:us-east-1:137112412989:amazon-linux-ami-updates"
 #  protocol                = "https"
@@ -311,7 +318,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_service_limits" {
 # TODO Terraform bug: Error fetching subscriptions for topic ***: AuthorizationError: User: *** is not authorized to perform: SNS:ListSubscriptionsByTopic on resource: *** status code: 403, request id: ***
 #resource "aws_sns_topic_subscription" "ami_update_notification_amazon_linux2" {
 #  depends_on = [aws_sns_topic_subscription.marbot]
-#  count      = (data.aws_region.current.name == "us-east-1" && var.ami_update_notification_amazon_linux2) ? 1 : 0
+#  count      = (data.aws_region.current.name == "us-east-1" && var.ami_update_notification_amazon_linux2 && var.enabled) ? 1 : 0
 #
 #  topic_arn               = "arn:aws:sns:us-east-1:137112412989:amazon-linux-2-ami-updates"
 #  protocol                = "https"
@@ -341,7 +348,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_service_limits" {
 
 resource "aws_budgets_budget" "cost" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (data.aws_region.current.name == "us-east-1" && var.budget_threshold >= 0) ? 1 : 0
+  count      = (data.aws_region.current.name == "us-east-1" && var.budget_threshold >= 0 && var.enabled) ? 1 : 0
 
   budget_type       = "COST"
   limit_amount      = var.budget_threshold
@@ -371,7 +378,7 @@ resource "aws_budgets_budget" "cost" {
     threshold                 = 100
     threshold_type            = "PERCENTAGE"
     notification_type         = "ACTUAL"
-    subscriber_sns_topic_arns = [aws_sns_topic.marbot.arn]
+    subscriber_sns_topic_arns = [join("", aws_sns_topic.marbot.*.arn)]
   }
 
   notification {
@@ -379,7 +386,7 @@ resource "aws_budgets_budget" "cost" {
     threshold                 = 100
     threshold_type            = "PERCENTAGE"
     notification_type         = "FORECASTED"
-    subscriber_sns_topic_arns = [aws_sns_topic.marbot.arn]
+    subscriber_sns_topic_arns = [join("", aws_sns_topic.marbot.*.arn)]
   }
 }
 
@@ -391,7 +398,7 @@ resource "aws_budgets_budget" "cost" {
 
 resource "aws_cloudwatch_event_rule" "root_user_login" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.root_user_login ? 1 : 0
+  count      = (var.root_user_login && var.enabled) ? 1 : 0
 
   description   = "A root user login was detected, better use IAM users instead (created by marbot)."
   event_pattern = <<JSON
@@ -411,18 +418,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "root_user_login" {
-  count = var.root_user_login ? 1 : 0
+  count = (var.root_user_login && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.root_user_login[0].name
+  rule      = join("", aws_cloudwatch_event_rule.root_user_login.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_fired" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.cloud_watch_alarm_fired ? 1 : 0
+  count      = (var.cloud_watch_alarm_fired && var.enabled) ? 1 : 0
 
   description   = "A CloudWatch Alarm fired (created by marbot)."
   event_pattern = <<JSON
@@ -445,18 +452,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "cloud_watch_alarm_fired" {
-  count = var.cloud_watch_alarm_fired ? 1 : 0
+  count = (var.cloud_watch_alarm_fired && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.cloud_watch_alarm_fired[0].name
+  rule      = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_fired.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_orphaned" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.cloud_watch_alarm_orphaned ? 1 : 0
+  count      = (var.cloud_watch_alarm_orphaned && var.enabled) ? 1 : 0
 
   description   = "A CloudWatch Alarm orphaned (created by marbot)."
   event_pattern = <<JSON
@@ -479,18 +486,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "cloud_watch_alarm_orphaned" {
-  count = var.cloud_watch_alarm_orphaned ? 1 : 0
+  count = (var.cloud_watch_alarm_orphaned && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.cloud_watch_alarm_orphaned[0].name
+  rule      = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_orphaned.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_auto_close" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.cloud_watch_alarm_auto_close ? 1 : 0
+  count      = (var.cloud_watch_alarm_auto_close && var.enabled) ? 1 : 0
 
   description   = "A CloudWatch Alarm could be auto-closed (created by marbot)."
   event_pattern = <<JSON
@@ -513,18 +520,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "cloud_watch_alarm_auto_close" {
-  count = var.cloud_watch_alarm_auto_close ? 1 : 0
+  count = (var.cloud_watch_alarm_auto_close && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.cloud_watch_alarm_auto_close[0].name
+  rule      = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_auto_close.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "batch_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.batch_failed ? 1 : 0
+  count      = (var.batch_failed && var.enabled) ? 1 : 0
 
   description   = "A Batch job failed (created by marbot)."
   event_pattern = <<JSON
@@ -545,18 +552,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "batch_failed" {
-  count = var.batch_failed ? 1 : 0
+  count = (var.batch_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.batch_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.batch_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "code_pipeline_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.code_pipeline_failed ? 1 : 0
+  count      = (var.code_pipeline_failed && var.enabled) ? 1 : 0
 
   description   = "A CodePipeline execution failed (created by marbot)."
   event_pattern = <<JSON
@@ -577,18 +584,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "code_pipeline_failed" {
-  count = var.code_pipeline_failed ? 1 : 0
+  count = (var.code_pipeline_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.code_pipeline_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.code_pipeline_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "code_pipeline_notifications" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.code_pipeline_notifications ? 1 : 0
+  count      = (var.code_pipeline_notifications && var.enabled) ? 1 : 0
 
   description   = "CodePipeline notifications (created by marbot)."
   event_pattern = <<JSON
@@ -609,18 +616,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "code_pipeline_notifications" {
-  count = var.code_pipeline_notifications ? 1 : 0
+  count = (var.code_pipeline_notifications && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.code_pipeline_notifications[0].name
+  rule      = join("", aws_cloudwatch_event_rule.code_pipeline_notifications.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "code_build_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.code_build_failed ? 1 : 0
+  count      = (var.code_build_failed && var.enabled) ? 1 : 0
 
   description   = "A CodeBuild build failed (created by marbot)."
   event_pattern = <<JSON
@@ -641,18 +648,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "code_build_failed" {
-  count = var.code_build_failed ? 1 : 0
+  count = (var.code_build_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.code_build_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.code_build_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "code_deploy_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.code_deploy_failed ? 1 : 0
+  count      = (var.code_deploy_failed && var.enabled) ? 1 : 0
 
   description   = "A CodeDeploy deployment or instance failed (created by marbot)."
   event_pattern = <<JSON
@@ -674,18 +681,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "code_deploy_failed" {
-  count = var.code_deploy_failed ? 1 : 0
+  count = (var.code_deploy_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.code_deploy_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.code_deploy_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "health_issue" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.health_issue ? 1 : 0
+  count      = (var.health_issue && var.enabled) ? 1 : 0
 
   description   = "AWS is experiencing events that may impact you (created by marbot)."
   event_pattern = <<JSON
@@ -707,18 +714,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "health_issue" {
-  count = var.health_issue ? 1 : 0
+  count = (var.health_issue && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.health_issue[0].name
+  rule      = join("", aws_cloudwatch_event_rule.health_issue.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "auto_scaling_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.auto_scaling_failed ? 1 : 0
+  count      = (var.auto_scaling_failed && var.enabled) ? 1 : 0
 
   description   = "EC2 Instances controlled by an Auto Scaling Group failed to launch or terminate (created by marbot)."
   event_pattern = <<JSON
@@ -735,18 +742,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "auto_scaling_failed" {
-  count = var.auto_scaling_failed ? 1 : 0
+  count = (var.auto_scaling_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.auto_scaling_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.auto_scaling_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "guard_duty_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.guard_duty_finding ? 1 : 0
+  count      = (var.guard_duty_finding && var.enabled) ? 1 : 0
 
   description   = "Findings from AWS GuardDuty (created by marbot)."
   event_pattern = <<JSON
@@ -762,18 +769,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "guard_duty_finding" {
-  count = var.guard_duty_finding ? 1 : 0
+  count = (var.guard_duty_finding && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.guard_duty_finding[0].name
+  rule      = join("", aws_cloudwatch_event_rule.guard_duty_finding.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "emr_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.emr_failed ? 1 : 0
+  count      = (var.emr_failed && var.enabled) ? 1 : 0
 
   description   = "EMR step or auto scaling policy failed (created by marbot)."
   event_pattern = <<JSON
@@ -795,18 +802,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "emr_failed" {
-  count = var.emr_failed ? 1 : 0
+  count = (var.emr_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.emr_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.emr_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "ebs_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.ebs_failed ? 1 : 0
+  count      = (var.ebs_failed && var.enabled) ? 1 : 0
 
   description   = "EBS snapshot failed (created by marbot)."
   event_pattern = <<JSON
@@ -828,18 +835,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "ebs_failed" {
-  count = var.ebs_failed ? 1 : 0
+  count = (var.ebs_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.ebs_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.ebs_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "ssm_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.ssm_failed ? 1 : 0
+  count      = (var.ssm_failed && var.enabled) ? 1 : 0
 
   description   = "SSM maintenance window execution failed (created by marbot)."
   event_pattern = <<JSON
@@ -861,20 +868,20 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "ssm_failed" {
-  count = var.ssm_failed ? 1 : 0
+  count = (var.ssm_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.ssm_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.ssm_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_db_event_subscription" "rds_instance_issue" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.rds_issue ? 1 : 0
+  count      = (var.rds_issue && var.enabled) ? 1 : 0
 
-  sns_topic   = aws_sns_topic.marbot.arn
+  sns_topic   = join("", aws_sns_topic.marbot.*.arn)
   source_type = "db-instance"
 }
 
@@ -882,9 +889,9 @@ resource "aws_db_event_subscription" "rds_instance_issue" {
 
 resource "aws_db_event_subscription" "rds_cluster_issue" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.rds_issue ? 1 : 0
+  count      = (var.rds_issue && var.enabled) ? 1 : 0
 
-  sns_topic   = aws_sns_topic.marbot.arn
+  sns_topic   = join("", aws_sns_topic.marbot.*.arn)
   source_type = "db-cluster"
 }
 
@@ -892,7 +899,7 @@ resource "aws_db_event_subscription" "rds_cluster_issue" {
 
 resource "aws_cloudwatch_event_rule" "glue_job_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.glue_job_failed ? 1 : 0
+  count      = (var.glue_job_failed && var.enabled) ? 1 : 0
 
   description   = "Glue job failed (created by marbot)."
   event_pattern = <<JSON
@@ -914,18 +921,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "glue_job_failed" {
-  count = var.glue_job_failed ? 1 : 0
+  count = (var.glue_job_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.glue_job_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.glue_job_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "ec2_spot_instance_interruption" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.ec2_spot_instance_interruption ? 1 : 0
+  count      = (var.ec2_spot_instance_interruption && var.enabled) ? 1 : 0
 
   description   = "EC2 Spot Instance interrupted (created by marbot)."
   event_pattern = <<JSON
@@ -941,18 +948,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "ec2_spot_instance_interruption" {
-  count = var.ec2_spot_instance_interruption ? 1 : 0
+  count = (var.ec2_spot_instance_interruption && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.ec2_spot_instance_interruption[0].name
+  rule      = join("", aws_cloudwatch_event_rule.ec2_spot_instance_interruption.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "ecs_service_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.ecs_service_failed ? 1 : 0
+  count      = (var.ecs_service_failed && var.enabled) ? 1 : 0
 
   description   = "ECS Service failed (created by marbot)."
   event_pattern = <<JSON
@@ -974,18 +981,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "ecs_service_failed" {
-  count = var.ecs_service_failed ? 1 : 0
+  count = (var.ecs_service_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.ecs_service_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.ecs_service_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "macie_alert" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.macie_alert ? 1 : 0
+  count      = (var.macie_alert && var.enabled) ? 1 : 0
 
   description = "Alerts from AWS Macie (created by marbot)."
   event_pattern = <<JSON
@@ -1001,18 +1008,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "macie_alert" {
-  count = var.macie_alert ? 1 : 0
+  count = (var.macie_alert && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.macie_alert[0].name
+  rule      = join("", aws_cloudwatch_event_rule.macie_alert.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "security_hub_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.security_hub_finding ? 1 : 0
+  count      = (var.security_hub_finding && var.enabled) ? 1 : 0
 
   description   = "Findings from AWS SecurityHub (created by marbot)."
   event_pattern = <<JSON
@@ -1028,18 +1035,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "security_hub_finding" {
-  count = var.security_hub_finding ? 1 : 0
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.security_hub_finding[0].name
+  rule      = join("", aws_cloudwatch_event_rule.security_hub_finding.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "ops_works_deployment_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.ops_works_deployment_failed ? 1 : 0
+  count      = (var.ops_works_deployment_failed && var.enabled) ? 1 : 0
 
   description   = "An OpsWorks deployment failed (created by marbot)."
   event_pattern = <<JSON
@@ -1060,18 +1067,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "ops_works_deployment_failed" {
-  count = var.ops_works_deployment_failed ? 1 : 0
+  count = (var.ops_works_deployment_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.ops_works_deployment_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.ops_works_deployment_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "ops_works_command_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.ops_works_command_failed ? 1 : 0
+  count      = (var.ops_works_command_failed && var.enabled) ? 1 : 0
 
   description   = "An OpsWorks command failed (created by marbot)."
   event_pattern = <<JSON
@@ -1094,18 +1101,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "ops_works_command_failed" {
-  count = var.ops_works_command_failed ? 1 : 0
+  count = (var.ops_works_command_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.ops_works_command_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.ops_works_command_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "ops_works_instance_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.ops_works_instance_failed ? 1 : 0
+  count      = (var.ops_works_instance_failed && var.enabled) ? 1 : 0
 
   description   = "An OpsWorks instance failed (created by marbot)."
   event_pattern = <<JSON
@@ -1129,18 +1136,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "ops_works_instance_failed" {
-  count = var.ops_works_instance_failed ? 1 : 0
+  count = (var.ops_works_instance_failed && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.ops_works_instance_failed[0].name
+  rule      = join("", aws_cloudwatch_event_rule.ops_works_instance_failed.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "ops_works_alert" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.ops_works_alert ? 1 : 0
+  count      = (var.ops_works_alert && var.enabled) ? 1 : 0
 
   description   = "Alerts from AWS OpsWorks (created by marbot)."
   event_pattern = <<JSON
@@ -1156,18 +1163,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "ops_works_alert" {
-  count = var.ops_works_alert ? 1 : 0
+  count = (var.ops_works_alert && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.ops_works_alert[0].name
+  rule      = join("", aws_cloudwatch_event_rule.ops_works_alert.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "ecr_image_scan_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.ecr_image_scan_finding ? 1 : 0
+  count      = (var.ecr_image_scan_finding && var.enabled) ? 1 : 0
 
   description   = "Findings from AWS ECR Image Scans (created by marbot)."
   event_pattern = <<JSON
@@ -1191,18 +1198,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "ecr_image_scan_finding" {
-  count = var.ecr_image_scan_finding ? 1 : 0
+  count = (var.ecr_image_scan_finding && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.ecr_image_scan_finding[0].name
+  rule      = join("", aws_cloudwatch_event_rule.ecr_image_scan_finding.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "dlm_policy_alert" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.dlm_policy_alert ? 1 : 0
+  count      = (var.dlm_policy_alert && var.enabled) ? 1 : 0
 
   description   = "Alerts from Amazon Data Lifecycle Manager (created by marbot)."
   event_pattern = <<JSON
@@ -1223,18 +1230,18 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "dlm_policy_alert" {
-  count = var.dlm_policy_alert ? 1 : 0
+  count = (var.dlm_policy_alert && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.dlm_policy_alert[0].name
+  rule      = join("", aws_cloudwatch_event_rule.dlm_policy_alert.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
 
 
 resource "aws_cloudwatch_event_rule" "iot_analytics_dataset_alert" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = var.iot_analytics_dataset_alert ? 1 : 0
+  count      = (var.iot_analytics_dataset_alert && var.enabled) ? 1 : 0
 
   description   = "Alerts from IoT Analytics dataset (created by marbot)."
   event_pattern = <<JSON
@@ -1255,17 +1262,9 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "iot_analytics_dataset_alert" {
-  count = var.iot_analytics_dataset_alert ? 1 : 0
+  count = (var.iot_analytics_dataset_alert && var.enabled) ? 1 : 0
 
-  rule      = aws_cloudwatch_event_rule.iot_analytics_dataset_alert[0].name
+  rule      = join("", aws_cloudwatch_event_rule.iot_analytics_dataset_alert.*.name)
   target_id = "marbot"
-  arn       = aws_sns_topic.marbot.arn
+  arn       = join("", aws_sns_topic.marbot.*.arn)
 }
-
-##########################################################################
-#                                                                        #
-#                                  TEST                                  #
-#                                                                        #
-##########################################################################
-
-# not possible with Terraform
