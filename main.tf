@@ -18,6 +18,8 @@ data "aws_region" "current" {}
 
 resource "aws_sns_topic" "marbot" {
   count = var.enabled ? 1 : 0
+
+  tags = var.tags
 }
 
 resource "aws_sns_topic_policy" "marbot" {
@@ -115,6 +117,7 @@ resource "aws_cloudwatch_event_rule" "monitoring_jump_start" {
 
   description         = "Monitoring Jump Start connection (created by marbot)"
   schedule_expression = "rate(30 days)"
+  tags                = var.tags
 }
 
 resource "aws_cloudwatch_event_target" "monitoring_jump_start" {
@@ -127,7 +130,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.1.0",
+  "Version": "0.2.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -165,6 +168,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_cost_optimization" {
   dimensions          = {
     Category = "Cost Optimization"
   }
+  tags                = var.tags
 }
 
 
@@ -187,6 +191,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_fault_tolerance" {
   dimensions          = {
     Category = "Fault Tolerance"
   }
+  tags                = var.tags
 }
 
 
@@ -209,6 +214,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_performance" {
   dimensions          = {
     Category = "Performance"
   }
+  tags                = var.tags
 }
 
 
@@ -231,6 +237,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_security" {
   dimensions          = {
     Category = "Security"
   }
+  tags                = var.tags
 }
 
 
@@ -253,6 +260,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_service_limits" {
   dimensions          = {
     Category = "Service Limits"
   }
+  tags                = var.tags
 }
 
 ##########################################################################
@@ -401,6 +409,7 @@ resource "aws_cloudwatch_event_rule" "root_user_login" {
   count      = (var.root_user_login && var.enabled) ? 1 : 0
 
   description   = "A root user login was detected, better use IAM users instead (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "detail-type": [
@@ -432,6 +441,7 @@ resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_fired" {
   count      = (var.cloud_watch_alarm_fired && var.enabled) ? 1 : 0
 
   description   = "A CloudWatch Alarm fired (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -466,6 +476,7 @@ resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_orphaned" {
   count      = (var.cloud_watch_alarm_orphaned && var.enabled) ? 1 : 0
 
   description   = "A CloudWatch Alarm orphaned (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -500,6 +511,7 @@ resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_auto_close" {
   count      = (var.cloud_watch_alarm_auto_close && var.enabled) ? 1 : 0
 
   description   = "A CloudWatch Alarm could be auto-closed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -534,6 +546,7 @@ resource "aws_cloudwatch_event_rule" "batch_failed" {
   count      = (var.batch_failed && var.enabled) ? 1 : 0
 
   description   = "A Batch job failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -566,6 +579,7 @@ resource "aws_cloudwatch_event_rule" "code_pipeline_failed" {
   count      = (var.code_pipeline_failed && var.enabled) ? 1 : 0
 
   description   = "A CodePipeline execution failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -598,6 +612,7 @@ resource "aws_cloudwatch_event_rule" "code_pipeline_notifications" {
   count      = (var.code_pipeline_notifications && var.enabled) ? 1 : 0
 
   description   = "CodePipeline notifications (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -630,6 +645,7 @@ resource "aws_cloudwatch_event_rule" "code_build_failed" {
   count      = (var.code_build_failed && var.enabled) ? 1 : 0
 
   description   = "A CodeBuild build failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -662,6 +678,7 @@ resource "aws_cloudwatch_event_rule" "code_deploy_failed" {
   count      = (var.code_deploy_failed && var.enabled) ? 1 : 0
 
   description   = "A CodeDeploy deployment or instance failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -695,6 +712,7 @@ resource "aws_cloudwatch_event_rule" "health_issue" {
   count      = (var.health_issue && var.enabled) ? 1 : 0
 
   description   = "AWS is experiencing events that may impact you (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -728,6 +746,7 @@ resource "aws_cloudwatch_event_rule" "auto_scaling_failed" {
   count      = (var.auto_scaling_failed && var.enabled) ? 1 : 0
 
   description   = "EC2 Instances controlled by an Auto Scaling Group failed to launch or terminate (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -756,6 +775,7 @@ resource "aws_cloudwatch_event_rule" "guard_duty_finding" {
   count      = (var.guard_duty_finding && var.enabled) ? 1 : 0
 
   description   = "Findings from AWS GuardDuty (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -783,6 +803,7 @@ resource "aws_cloudwatch_event_rule" "emr_failed" {
   count      = (var.emr_failed && var.enabled) ? 1 : 0
 
   description   = "EMR step or auto scaling policy failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -816,6 +837,7 @@ resource "aws_cloudwatch_event_rule" "ebs_failed" {
   count      = (var.ebs_failed && var.enabled) ? 1 : 0
 
   description   = "EBS snapshot failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -849,6 +871,7 @@ resource "aws_cloudwatch_event_rule" "ssm_failed" {
   count      = (var.ssm_failed && var.enabled) ? 1 : 0
 
   description   = "SSM maintenance window execution failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -883,6 +906,7 @@ resource "aws_db_event_subscription" "rds_instance_issue" {
 
   sns_topic   = join("", aws_sns_topic.marbot.*.arn)
   source_type = "db-instance"
+  tags        = var.tags
 }
 
 
@@ -893,6 +917,7 @@ resource "aws_db_event_subscription" "rds_cluster_issue" {
 
   sns_topic   = join("", aws_sns_topic.marbot.*.arn)
   source_type = "db-cluster"
+  tags        = var.tags
 }
 
 
@@ -902,6 +927,7 @@ resource "aws_cloudwatch_event_rule" "glue_job_failed" {
   count      = (var.glue_job_failed && var.enabled) ? 1 : 0
 
   description   = "Glue job failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -935,6 +961,7 @@ resource "aws_cloudwatch_event_rule" "ec2_spot_instance_interruption" {
   count      = (var.ec2_spot_instance_interruption && var.enabled) ? 1 : 0
 
   description   = "EC2 Spot Instance interrupted (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -962,6 +989,7 @@ resource "aws_cloudwatch_event_rule" "ecs_service_failed" {
   count      = (var.ecs_service_failed && var.enabled) ? 1 : 0
 
   description   = "ECS Service failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -995,6 +1023,7 @@ resource "aws_cloudwatch_event_rule" "macie_alert" {
   count      = (var.macie_alert && var.enabled) ? 1 : 0
 
   description = "Alerts from AWS Macie (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -1022,6 +1051,7 @@ resource "aws_cloudwatch_event_rule" "security_hub_finding" {
   count      = (var.security_hub_finding && var.enabled) ? 1 : 0
 
   description   = "Findings from AWS SecurityHub (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -1049,6 +1079,7 @@ resource "aws_cloudwatch_event_rule" "ops_works_deployment_failed" {
   count      = (var.ops_works_deployment_failed && var.enabled) ? 1 : 0
 
   description   = "An OpsWorks deployment failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -1081,6 +1112,7 @@ resource "aws_cloudwatch_event_rule" "ops_works_command_failed" {
   count      = (var.ops_works_command_failed && var.enabled) ? 1 : 0
 
   description   = "An OpsWorks command failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -1115,6 +1147,7 @@ resource "aws_cloudwatch_event_rule" "ops_works_instance_failed" {
   count      = (var.ops_works_instance_failed && var.enabled) ? 1 : 0
 
   description   = "An OpsWorks instance failed (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -1150,6 +1183,7 @@ resource "aws_cloudwatch_event_rule" "ops_works_alert" {
   count      = (var.ops_works_alert && var.enabled) ? 1 : 0
 
   description   = "Alerts from AWS OpsWorks (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -1177,6 +1211,7 @@ resource "aws_cloudwatch_event_rule" "ecr_image_scan_finding" {
   count      = (var.ecr_image_scan_finding && var.enabled) ? 1 : 0
 
   description   = "Findings from AWS ECR Image Scans (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -1212,6 +1247,7 @@ resource "aws_cloudwatch_event_rule" "dlm_policy_alert" {
   count      = (var.dlm_policy_alert && var.enabled) ? 1 : 0
 
   description   = "Alerts from Amazon Data Lifecycle Manager (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 
@@ -1244,6 +1280,7 @@ resource "aws_cloudwatch_event_rule" "iot_analytics_dataset_alert" {
   count      = (var.iot_analytics_dataset_alert && var.enabled) ? 1 : 0
 
   description   = "Alerts from IoT Analytics dataset (created by marbot)."
+  tags          = var.tags
   event_pattern = <<JSON
 {
   "source": [ 

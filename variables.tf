@@ -9,6 +9,12 @@ variable "enabled" {
   default     = true
 }
 
+variable "tags" {
+  description = "A map of tags to add to all resources"
+  type        = map(string)
+  default     = {}
+}
+
 variable "budget_threshold" {
   type        = number
   description = "Receive an alert, if your monthly AWS costs (in USD) are higher than this value (set to -1 to disable; works in us-east-1 only)."
