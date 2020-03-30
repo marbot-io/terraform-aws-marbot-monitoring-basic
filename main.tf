@@ -1,6 +1,8 @@
 terraform {
+  required_version = "~> 0.12"
   required_providers {
-    aws = ">= 2.48.0"
+    aws = ">= 2.48.0, < 3"
+    random = "~> 2.2"
   }
 }
 
