@@ -113,26 +113,27 @@ JSON
 
 
 
-resource "aws_cloudwatch_event_rule" "monitoring_jump_start" {
+resource "aws_cloudwatch_event_rule" "monitoring_jump_start_connection" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = var.enabled ? 1 : 0
 
+  name                = "marbot-basic-connection-${random_id.id8.hex}"
   description         = "Monitoring Jump Start connection. (created by marbot)"
   schedule_expression = "rate(30 days)"
   tags                = var.tags
 }
 
-resource "aws_cloudwatch_event_target" "monitoring_jump_start" {
+resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
   count = var.enabled ? 1 : 0
 
-  rule      = join("", aws_cloudwatch_event_rule.monitoring_jump_start.*.name)
+  rule      = join("", aws_cloudwatch_event_rule.monitoring_jump_start_connection.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
   input     = <<JSON
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.3.0",
+  "Version": "0.4.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -156,7 +157,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_cost_optimization" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor && var.enabled) ? 1 : 0
 
-  alarm_name          = "marbot-cost-optimization-${random_id.id8.hex}"
+  alarm_name          = "marbot-basic-cost-optimization-${random_id.id8.hex}"
   alarm_description   = "Trusted Advisor Cost Optimization checks are red. (created by marbot)"
   namespace           = "AWS/TrustedAdvisor"
   metric_name         = "RedChecks"
@@ -179,7 +180,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_fault_tolerance" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor && var.enabled) ? 1 : 0
 
-  alarm_name          = "marbot-fault-tolerance-${random_id.id8.hex}"
+  alarm_name          = "marbot-basic-fault-tolerance-${random_id.id8.hex}"
   alarm_description   = "Trusted Advisor Fault Tolerance checks are red. (created by marbot)"
   namespace           = "AWS/TrustedAdvisor"
   metric_name         = "RedChecks"
@@ -202,7 +203,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_performance" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor && var.enabled) ? 1 : 0
 
-  alarm_name          = "marbot-performance-${random_id.id8.hex}"
+  alarm_name          = "marbot-basic-performance-${random_id.id8.hex}"
   alarm_description   = "Trusted Advisor Performance checks are red. (created by marbot)"
   namespace           = "AWS/TrustedAdvisor"
   metric_name         = "RedChecks"
@@ -225,7 +226,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_security" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor && var.enabled) ? 1 : 0
 
-  alarm_name          = "marbot-security-${random_id.id8.hex}"
+  alarm_name          = "marbot-basic-security-${random_id.id8.hex}"
   alarm_description   = "Trusted Advisor Security checks are red. (created by marbot)"
   namespace           = "AWS/TrustedAdvisor"
   metric_name         = "RedChecks"
@@ -248,7 +249,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_service_limits" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (data.aws_region.current.name == "us-east-1" && var.trusted_advisor && var.enabled) ? 1 : 0
 
-  alarm_name          = "marbot-service-limits-${random_id.id8.hex}"
+  alarm_name          = "marbot-basic-service-limits-${random_id.id8.hex}"
   alarm_description   = "Trusted Advisor Service Limits checks are red. (created by marbot)"
   namespace           = "AWS/TrustedAdvisor"
   metric_name         = "RedChecks"
@@ -410,6 +411,7 @@ resource "aws_cloudwatch_event_rule" "root_user_login" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.root_user_login && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-root-user-login-${random_id.id8.hex}"
   description   = "A root user login was detected, better use IAM users instead. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -442,6 +444,7 @@ resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_fired" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.cloud_watch_alarm_fired && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-cloud-watch-alarm-fired-${random_id.id8.hex}"
   description   = "A CloudWatch Alarm fired. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -477,6 +480,7 @@ resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_orphaned" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.cloud_watch_alarm_orphaned && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-cloud-watch-alarm-orphaned-${random_id.id8.hex}"
   description   = "A CloudWatch Alarm orphaned. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -512,6 +516,7 @@ resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_auto_close" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.cloud_watch_alarm_auto_close && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-cloud-watch-alarm-auto-close-${random_id.id8.hex}"
   description   = "A CloudWatch Alarm could be auto-closed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -547,6 +552,7 @@ resource "aws_cloudwatch_event_rule" "batch_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.batch_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-batch-failed-${random_id.id8.hex}"
   description   = "A Batch job failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -580,6 +586,7 @@ resource "aws_cloudwatch_event_rule" "code_pipeline_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.code_pipeline_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-code-pipeline-failed-${random_id.id8.hex}"
   description   = "A CodePipeline execution failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -613,6 +620,7 @@ resource "aws_cloudwatch_event_rule" "code_pipeline_notifications" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.code_pipeline_notifications && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-code-pipeline-notifications-${random_id.id8.hex}"
   description   = "CodePipeline notifications. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -646,6 +654,7 @@ resource "aws_cloudwatch_event_rule" "code_build_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.code_build_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-code-build-failed-${random_id.id8.hex}"
   description   = "A CodeBuild build failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -679,6 +688,7 @@ resource "aws_cloudwatch_event_rule" "code_deploy_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.code_deploy_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-code-deploy-failed-${random_id.id8.hex}"
   description   = "A CodeDeploy deployment or instance failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -713,6 +723,7 @@ resource "aws_cloudwatch_event_rule" "health_issue" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.health_issue && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-health-issue-${random_id.id8.hex}"
   description   = "AWS is experiencing events that may impact you. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -747,6 +758,7 @@ resource "aws_cloudwatch_event_rule" "auto_scaling_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.auto_scaling_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-auto-scaling-failed-${random_id.id8.hex}"
   description   = "EC2 Instances controlled by an Auto Scaling Group failed to launch or terminate. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -776,6 +788,7 @@ resource "aws_cloudwatch_event_rule" "guard_duty_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.guard_duty_finding && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-guard-duty-finding-${random_id.id8.hex}"
   description   = "Findings from AWS GuardDuty. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -804,6 +817,7 @@ resource "aws_cloudwatch_event_rule" "emr_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.emr_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-emr-failed-${random_id.id8.hex}"
   description   = "EMR step or auto scaling policy failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -838,6 +852,7 @@ resource "aws_cloudwatch_event_rule" "ebs_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ebs_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-ebs-failed-${random_id.id8.hex}"
   description   = "EBS snapshot failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -872,6 +887,7 @@ resource "aws_cloudwatch_event_rule" "ssm_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ssm_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-ssm-failed-${random_id.id8.hex}"
   description   = "SSM maintenance window execution failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -928,6 +944,7 @@ resource "aws_cloudwatch_event_rule" "glue_job_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.glue_job_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-glue-job-failed-${random_id.id8.hex}"
   description   = "Glue job failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -962,6 +979,7 @@ resource "aws_cloudwatch_event_rule" "ec2_spot_instance_interruption" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ec2_spot_instance_interruption && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-ec2-spot-instance-interruption-${random_id.id8.hex}"
   description   = "EC2 Spot Instance interrupted. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -990,6 +1008,7 @@ resource "aws_cloudwatch_event_rule" "ecs_service_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ecs_service_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-ecs-service-failed-${random_id.id8.hex}"
   description   = "ECS Service failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -1024,6 +1043,7 @@ resource "aws_cloudwatch_event_rule" "macie_alert" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.macie_alert && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-macie-alert-${random_id.id8.hex}"
   description = "Alerts from AWS Macie. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -1052,6 +1072,7 @@ resource "aws_cloudwatch_event_rule" "security_hub_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.security_hub_finding && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-security-hub-finding-${random_id.id8.hex}"
   description   = "Findings from AWS SecurityHub. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -1080,6 +1101,7 @@ resource "aws_cloudwatch_event_rule" "ops_works_deployment_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ops_works_deployment_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-ops-works-deployment-failed-${random_id.id8.hex}"
   description   = "An OpsWorks deployment failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -1113,6 +1135,7 @@ resource "aws_cloudwatch_event_rule" "ops_works_command_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ops_works_command_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-ops-works-command-failed-${random_id.id8.hex}"
   description   = "An OpsWorks command failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -1148,6 +1171,7 @@ resource "aws_cloudwatch_event_rule" "ops_works_instance_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ops_works_instance_failed && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-ops-works-instance-failed-${random_id.id8.hex}"
   description   = "An OpsWorks instance failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -1184,6 +1208,7 @@ resource "aws_cloudwatch_event_rule" "ops_works_alert" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ops_works_alert && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-ops-works-alert-${random_id.id8.hex}"
   description   = "Alerts from AWS OpsWorks. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -1212,6 +1237,7 @@ resource "aws_cloudwatch_event_rule" "ecr_image_scan_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ecr_image_scan_finding && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-ecr-image-scan-finding-${random_id.id8.hex}"
   description   = "Findings from AWS ECR Image Scans. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -1248,6 +1274,7 @@ resource "aws_cloudwatch_event_rule" "dlm_policy_alert" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.dlm_policy_alert && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-dlm-policy-alert-${random_id.id8.hex}"
   description   = "Alerts from Amazon Data Lifecycle Manager. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
@@ -1281,6 +1308,7 @@ resource "aws_cloudwatch_event_rule" "iot_analytics_dataset_alert" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.iot_analytics_dataset_alert && var.enabled) ? 1 : 0
 
+  name          = "marbot-basic-iot-analytics-dataset-alert-${random_id.id8.hex}"
   description   = "Alerts from IoT Analytics dataset. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
