@@ -17,7 +17,7 @@ variable "tags" {
 
 variable "budget_threshold" {
   type        = number
-  description = "Receive an alert, if your monthly AWS costs (in USD) are higher than this value (set to -1 to disable; works in us-east-1 only)."
+  description = "Receive an alert, if your monthly AWS costs (in USD) are higher than this value (works in us-east-1 only; set to -1 to disable)."
   default     = -1
 }
 
