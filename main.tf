@@ -1,7 +1,7 @@
 terraform {
   required_version = "~> 0.12"
   required_providers {
-    aws = ">= 2.48.0, < 3"
+    aws    = ">= 2.48.0, < 3"
     random = "~> 2.2"
   }
 }
@@ -39,7 +39,7 @@ data "aws_iam_policy_document" "topic_policy" {
     resources = [join("", aws_sns_topic.marbot.*.arn)]
 
     principals {
-      type        = "Service"
+      type = "Service"
       identifiers = [
         "events.amazonaws.com",
         "budgets.amazonaws.com",
@@ -69,9 +69,9 @@ data "aws_iam_policy_document" "topic_policy" {
   }
 
   statement {
-    sid      = "Sid3"
-    effect   = "Allow"
-    actions  = ["sns:Publish"]
+    sid       = "Sid3"
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
     resources = [join("", aws_sns_topic.marbot.*.arn)]
 
     principals {
@@ -148,7 +148,7 @@ JSON
 ##########################################################################
 
 resource "random_id" "id8" {
-    byte_length = 8
+  byte_length = 8
 }
 
 
@@ -168,10 +168,10 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_cost_optimization" {
   threshold           = 0
   alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
   ok_actions          = [join("", aws_sns_topic.marbot.*.arn)]
-  dimensions          = {
+  dimensions = {
     Category = "Cost Optimization"
   }
-  tags                = var.tags
+  tags = var.tags
 }
 
 
@@ -191,10 +191,10 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_fault_tolerance" {
   threshold           = 0
   alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
   ok_actions          = [join("", aws_sns_topic.marbot.*.arn)]
-  dimensions          = {
+  dimensions = {
     Category = "Fault Tolerance"
   }
-  tags                = var.tags
+  tags = var.tags
 }
 
 
@@ -214,10 +214,10 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_performance" {
   threshold           = 0
   alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
   ok_actions          = [join("", aws_sns_topic.marbot.*.arn)]
-  dimensions          = {
+  dimensions = {
     Category = "Performance"
   }
-  tags                = var.tags
+  tags = var.tags
 }
 
 
@@ -237,10 +237,10 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_security" {
   threshold           = 0
   alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
   ok_actions          = [join("", aws_sns_topic.marbot.*.arn)]
-  dimensions          = {
+  dimensions = {
     Category = "Security"
   }
-  tags                = var.tags
+  tags = var.tags
 }
 
 
@@ -260,10 +260,10 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_service_limits" {
   threshold           = 0
   alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
   ok_actions          = [join("", aws_sns_topic.marbot.*.arn)]
-  dimensions          = {
+  dimensions = {
     Category = "Service Limits"
   }
-  tags                = var.tags
+  tags = var.tags
 }
 
 ##########################################################################
@@ -366,8 +366,8 @@ resource "aws_budgets_budget" "cost" {
   limit_unit        = "USD"
   time_unit         = "MONTHLY"
   time_period_start = "2019-01-01_12:00"
-  cost_filters      = {
-    LinkedAccount   = data.aws_caller_identity.current.account_id
+  cost_filters = {
+    LinkedAccount = data.aws_caller_identity.current.account_id
   }
 
   cost_types {
@@ -1044,7 +1044,7 @@ resource "aws_cloudwatch_event_rule" "macie_alert" {
   count      = (var.macie_alert && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-macie-alert-${random_id.id8.hex}"
-  description = "Alerts from AWS Macie. (created by marbot)"
+  description   = "Alerts from AWS Macie. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
 {

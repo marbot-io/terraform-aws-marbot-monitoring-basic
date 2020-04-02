@@ -1,6 +1,6 @@
 output "topic_name" {
   description = "Name of the SNS topic where errors, warnings, and notifications are published to."
-  value       = join("",aws_sns_topic.marbot.*.name)
+  value       = join("", aws_sns_topic.marbot.*.name)
 }
 
 output "topic_arn" {
