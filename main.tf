@@ -45,7 +45,8 @@ data "aws_iam_policy_document" "topic_policy" {
         "budgets.amazonaws.com",
         "rds.amazonaws.com",
         "s3.amazonaws.com",
-        "backup.amazonaws.com"
+        "backup.amazonaws.com",
+        "codestar-notifications.amazonaws.com"
       ]
     }
   }
