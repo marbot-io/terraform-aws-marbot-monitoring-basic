@@ -134,7 +134,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.4.0",
+  "Version": "0.5.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -790,7 +790,7 @@ resource "aws_cloudwatch_event_rule" "guard_duty_finding" {
   count      = (var.guard_duty_finding && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-guard-duty-finding-${random_id.id8.hex}"
-  description   = "Findings from AWS GuardDuty. (created by marbot)"
+  description   = "Findings (severity >= high) from AWS GuardDuty. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
 {
@@ -799,7 +799,10 @@ resource "aws_cloudwatch_event_rule" "guard_duty_finding" {
   ],
   "detail-type": [
     "GuardDuty Finding"
-  ]
+  ],
+  "detail": {
+    "severity": [{"numeric": [">=", 7]}]
+  }
 }
 JSON
 }
