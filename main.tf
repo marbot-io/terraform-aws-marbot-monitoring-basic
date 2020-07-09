@@ -21,7 +21,8 @@ data "aws_region" "current" {}
 resource "aws_sns_topic" "marbot" {
   count = var.enabled ? 1 : 0
 
-  tags = var.tags
+  name_prefix = "marbot"
+  tags        = var.tags
 }
 
 resource "aws_sns_topic_policy" "marbot" {
