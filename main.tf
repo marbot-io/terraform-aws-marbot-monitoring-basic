@@ -135,7 +135,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.6.0",
+  "Version": "0.7.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -650,6 +650,34 @@ resource "aws_cloudwatch_event_target" "code_pipeline_notifications" {
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
+
+
+resource "aws_cloudwatch_event_rule" "code_commit_pull_request_notifications" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.code_commit_pull_request_notifications && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-code-commit-pr-notifications-${random_id.id8.hex}"
+  description   = "CodeCommit pull request notifications. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.codecommit"
+  ],
+  "detail-type": [
+    "CodeCommit Pull Request State Change"
+  ]
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "code_commit_pull_request_notifications" {
+  count = (var.code_commit_pull_request_notifications && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.code_commit_pull_request_notifications.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
 
 
 resource "aws_cloudwatch_event_rule" "code_build_failed" {

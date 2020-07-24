@@ -195,6 +195,12 @@ variable "code_pipeline_notifications" {
   default     = true
 }
 
+variable "code_commit_pull_request_notifications" {
+  type        = bool
+  description = "Receive a notification, if a CodeCommit pull request changes."
+  default     = true
+}
+
 variable "ami_update_notification_ecs_optimized" {
   type        = bool
   description = "Receive an alert, if a new ECS optimized AMI is released (works in us-east-1 only)."
