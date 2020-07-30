@@ -135,7 +135,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.7.0",
+  "Version": "0.8.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -1077,7 +1077,7 @@ resource "aws_cloudwatch_event_rule" "macie_alert" {
   count      = (var.macie_alert && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-macie-alert-${random_id.id8.hex}"
-  description   = "Alerts from AWS Macie. (created by marbot)"
+  description   = "Alerts (risk >= high) from AWS Macie. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
 {
@@ -1086,7 +1086,12 @@ resource "aws_cloudwatch_event_rule" "macie_alert" {
   ],
   "detail-type": [
     "Macie Alert"
-  ]
+  ],
+  "detail": {
+    "trigger": {
+      "risk": [{"numeric": [">=", 8]}]
+    }
+  }
 }
 JSON
 }
