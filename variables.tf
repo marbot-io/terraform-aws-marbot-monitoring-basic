@@ -144,7 +144,7 @@ variable "macie_alert" {
 variable "security_hub_finding" {
   type        = bool
   description = "Receive an alert, if a SecurityHub finding is created."
-  default     = false
+  default     = true
 }
 
 variable "ops_works_deployment_failed" {

@@ -135,7 +135,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.8.0",
+  "Version": "0.9.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -1111,7 +1111,7 @@ resource "aws_cloudwatch_event_rule" "security_hub_finding" {
   count      = (var.security_hub_finding && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-security-hub-finding-${random_id.id8.hex}"
-  description   = "Findings from AWS SecurityHub. (created by marbot)"
+  description   = "Findings (severity >= high) from AWS SecurityHub. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
 {
@@ -1120,7 +1120,14 @@ resource "aws_cloudwatch_event_rule" "security_hub_finding" {
   ],
   "detail-type": [
     "Security Hub Findings - Imported"
-  ]
+  ],
+  "detail": {
+    "findings": {
+      "Severity": {
+        "Normalized": [{"numeric": [">=", 70]}]
+      }
+    }
+  }
 }
 JSON
 }
