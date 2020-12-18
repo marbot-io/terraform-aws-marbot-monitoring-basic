@@ -1044,7 +1044,7 @@ resource "aws_cloudwatch_event_rule" "ecs_service_failed" {
   event_pattern = <<JSON
 {
   "source": [ 
-    "aws.ec2"
+    "aws.ecs"
   ],
   "detail-type": [
     "ECS Service Action"
