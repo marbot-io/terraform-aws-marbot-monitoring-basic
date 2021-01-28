@@ -36,7 +36,7 @@ variable "root_user_login" {
 variable "cloud_watch_alarm_fired" {
   type        = bool
   description = "Receive an alert, if any CloudWatch Alarm fires (state ALARM; instead of defining actions for each alarm)."
-  default     = false
+  default     = true
 }
 
 variable "cloud_watch_alarm_orphaned" {

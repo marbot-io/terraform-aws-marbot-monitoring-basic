@@ -12,6 +12,12 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
+data "archive_file" "lambda" {
+  type        = "zip"
+  output_path = "${path.module}/lambda.zip"
+  source_dir  = "${path.module}/lambda"
+}
+
 ##########################################################################
 #                                                                        #
 #                                 TOPIC                                  #
@@ -442,6 +448,143 @@ resource "aws_cloudwatch_event_target" "root_user_login" {
 
 
 
+resource "aws_iam_role" "cloud_watch_alarm_filter" {
+  count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  name_prefix = "marbot"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "cloud_watch_alarm_filter" {
+  count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  name_prefix = "marbot"
+  role        = join("", aws_iam_role.cloud_watch_alarm_filter.*.id)
+
+  policy = <<-EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Action": "cloudwatch:describeAlarms",
+        "Effect": "Allow",
+        "Resource": "*"
+      },
+      {
+        "Action": "sns:Publish",
+        "Effect": "Allow",
+        "Resource": "${join("", aws_sns_topic.marbot.*.arn)}"
+      },
+      {
+        "Action": [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Effect": "Allow",
+        "Resource": "${join("", aws_cloudwatch_log_group.cloud_watch_alarm_filter.*.arn)}"
+      }
+    ]
+  }
+  EOF
+}
+
+resource "aws_lambda_function" "cloud_watch_alarm_filter" {
+  count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  filename         = data.archive_file.lambda.output_path
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+  function_name    = "marbot-basic-cloud-watch-alarm-filter-${random_id.id8.hex}"
+  role             = join("", aws_iam_role.cloud_watch_alarm_filter.*.arn)
+  handler          = "cloud-watch.handler"
+  runtime          = "nodejs12.x"
+  memory_size      = 1024
+  timeout          = 30
+  environment {
+    variables = {
+      TOPIC_ARN = join("", aws_sns_topic.marbot.*.arn)
+    }
+  }
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "cloud_watch_alarm_filter_errors" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  alarm_name          = "marbot-basic-cloud-watch-alarm-filter-errors-${random_id.id8.hex}"
+  alarm_description   = "Invocations failed due to errors in the function"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 0
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  treat_missing_data  = "notBreaching"
+  dimensions = {
+    FunctionName = join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)
+  }
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "cloud_watch_alarm_filter_throttles" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  alarm_name          = "marbot-basic-cloud-watch-alarm-filter-throttles-${random_id.id8.hex}"
+  alarm_description   = "Invocation attempts that were throttled due to invocation rates exceeding the concurrent limits"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Throttles"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 0
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  treat_missing_data  = "notBreaching"
+  dimensions = {
+    FunctionName = join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)
+  }
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "cloud_watch_alarm_filter" {
+  count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  name              = "/aws/lambda/${join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)}"
+  retention_in_days = 14
+
+  tags = var.tags
+}
+
+
+
+resource "aws_lambda_permission" "cloud_watch_alarm_fired" {
+  count = (var.cloud_watch_alarm_fired && var.enabled) ? 1 : 0
+
+  function_name = join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)
+  action        = "lambda:InvokeFunction"
+  principal     = "events.amazonaws.com"
+  source_arn    = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_fired.*.arn)
+}
+
 resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_fired" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.cloud_watch_alarm_fired && var.enabled) ? 1 : 0
@@ -473,10 +616,19 @@ resource "aws_cloudwatch_event_target" "cloud_watch_alarm_fired" {
 
   rule      = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_fired.*.name)
   target_id = "marbot"
-  arn       = join("", aws_sns_topic.marbot.*.arn)
+  arn       = join("", aws_lambda_function.cloud_watch_alarm_filter.*.arn)
 }
 
 
+
+resource "aws_lambda_permission" "cloud_watch_alarm_orphaned" {
+  count = (var.cloud_watch_alarm_orphaned && var.enabled) ? 1 : 0
+
+  function_name = join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)
+  action        = "lambda:InvokeFunction"
+  principal     = "events.amazonaws.com"
+  source_arn    = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_orphaned.*.arn)
+}
 
 resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_orphaned" {
   depends_on = [aws_sns_topic_subscription.marbot]
@@ -509,10 +661,19 @@ resource "aws_cloudwatch_event_target" "cloud_watch_alarm_orphaned" {
 
   rule      = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_orphaned.*.name)
   target_id = "marbot"
-  arn       = join("", aws_sns_topic.marbot.*.arn)
+  arn       = join("", aws_lambda_function.cloud_watch_alarm_filter.*.arn)
 }
 
 
+
+resource "aws_lambda_permission" "cloud_watch_alarm_auto_close" {
+  count = (var.cloud_watch_alarm_auto_close && var.enabled) ? 1 : 0
+
+  function_name = join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)
+  action        = "lambda:InvokeFunction"
+  principal     = "events.amazonaws.com"
+  source_arn    = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_auto_close.*.arn)
+}
 
 resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_auto_close" {
   depends_on = [aws_sns_topic_subscription.marbot]
@@ -545,7 +706,7 @@ resource "aws_cloudwatch_event_target" "cloud_watch_alarm_auto_close" {
 
   rule      = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_auto_close.*.name)
   target_id = "marbot"
-  arn       = join("", aws_sns_topic.marbot.*.arn)
+  arn       = join("", aws_lambda_function.cloud_watch_alarm_filter.*.arn)
 }
 
 
@@ -1157,17 +1318,11 @@ resource "aws_iam_role_policy" "security_hub_workflow" {
   EOF
 }
 
-data "archive_file" "security_hub_workflow" {
-  type        = "zip"
-  output_path = "${path.module}/lambda.zip"
-  source_dir  = "${path.module}/lambda"
-}
-
 resource "aws_lambda_function" "security_hub_workflow" {
   count = (var.security_hub_finding && var.enabled) ? 1 : 0
 
-  filename         = data.archive_file.security_hub_workflow.output_path
-  source_code_hash = data.archive_file.security_hub_workflow.output_base64sha256
+  filename         = data.archive_file.lambda.output_path
+  source_code_hash = data.archive_file.lambda.output_base64sha256
   function_name    = "marbot-basic-security-hub-finding-workflow-${random_id.id8.hex}"
   role             = join("", aws_iam_role.security_hub_workflow.*.arn)
   handler          = "security-hub.handler"
