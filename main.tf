@@ -135,7 +135,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.10.2",
+  "Version": "0.11.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -1106,6 +1106,137 @@ resource "aws_cloudwatch_event_target" "macie_alert" {
 
 
 
+resource "aws_iam_role" "security_hub_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  name_prefix = "marbot"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "security_hub_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  name_prefix = "marbot"
+  role        = join("", aws_iam_role.security_hub_workflow.*.id)
+
+  policy = <<-EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Action": "securityhub:BatchUpdateFindings",
+        "Effect": "Allow",
+        "Resource": "*"
+      },
+      {
+        "Action": [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Effect": "Allow",
+        "Resource": "${join("", aws_cloudwatch_log_group.security_hub_workflow.*.arn)}"
+      }
+    ]
+  }
+  EOF
+}
+
+data "archive_file" "security_hub_workflow" {
+  type        = "zip"
+  output_path = "${path.module}/lambda.zip"
+  source_dir  = "${path.module}/lambda"
+}
+
+resource "aws_lambda_function" "security_hub_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  filename         = data.archive_file.security_hub_workflow.output_path
+  source_code_hash = data.archive_file.security_hub_workflow.output_base64sha256
+  function_name    = "marbot-basic-security-hub-finding-workflow-${random_id.id8.hex}"
+  role             = join("", aws_iam_role.security_hub_workflow.*.arn)
+  handler          = "security-hub.handler"
+  runtime          = "nodejs12.x"
+  memory_size      = 1024
+  timeout          = 30
+  tags             = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "security_hub_workflow_errors" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  alarm_name          = "marbot-basic-security-hub-finding-workflow-errors-${random_id.id8.hex}"
+  alarm_description   = "Invocations failed due to errors in the function"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 0
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  treat_missing_data  = "notBreaching"
+  dimensions = {
+    FunctionName = join("", aws_lambda_function.security_hub_workflow.*.function_name)
+  }
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "security_hub_workflow_throttles" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  alarm_name          = "marbot-basic-security-hub-finding-workflow-throttles-${random_id.id8.hex}"
+  alarm_description   = "Invocation attempts that were throttled due to invocation rates exceeding the concurrent limits"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Throttles"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 0
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  treat_missing_data  = "notBreaching"
+  dimensions = {
+    FunctionName = join("", aws_lambda_function.security_hub_workflow.*.function_name)
+  }
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "security_hub_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  name              = "/aws/lambda/${join("", aws_lambda_function.security_hub_workflow.*.function_name)}"
+  retention_in_days = 14
+
+  tags = var.tags
+}
+
+resource "aws_lambda_permission" "security_hub_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  function_name = join("", aws_lambda_function.security_hub_workflow.*.function_name)
+  action        = "lambda:InvokeFunction"
+  principal     = "events.amazonaws.com"
+  source_arn    = join("", aws_cloudwatch_event_rule.security_hub_finding.*.arn)
+}
+
 resource "aws_cloudwatch_event_rule" "security_hub_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.security_hub_finding && var.enabled) ? 1 : 0
@@ -1146,6 +1277,14 @@ resource "aws_cloudwatch_event_target" "security_hub_finding" {
   rule      = join("", aws_cloudwatch_event_rule.security_hub_finding.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+resource "aws_cloudwatch_event_target" "security_hub_finding_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.security_hub_finding.*.name)
+  target_id = "marbot-securityhub"
+  arn       = join("", aws_lambda_function.security_hub_workflow.*.arn)
 }
 
 
