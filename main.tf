@@ -369,14 +369,12 @@ resource "aws_budgets_budget" "cost" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (data.aws_region.current.name == "us-east-1" && var.budget_threshold >= 0 && var.enabled) ? 1 : 0
 
+  name_prefix       = "marbot"
   budget_type       = "COST"
   limit_amount      = var.budget_threshold
   limit_unit        = "USD"
   time_unit         = "MONTHLY"
   time_period_start = "2019-01-01_12:00"
-  cost_filters = {
-    LinkedAccount = data.aws_caller_identity.current.account_id
-  }
 
   cost_types {
     include_credit             = false
@@ -405,6 +403,74 @@ resource "aws_budgets_budget" "cost" {
     threshold                 = 100
     threshold_type            = "PERCENTAGE"
     notification_type         = "FORECASTED"
+    subscriber_sns_topic_arns = [join("", aws_sns_topic.marbot.*.arn)]
+  }
+}
+
+resource "aws_budgets_budget" "savings_plans_coverage" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (data.aws_region.current.name == "us-east-1" && var.savings_plans_coverage_threshold >= 0 && var.enabled) ? 1 : 0
+
+  name_prefix       = "marbot"
+  budget_type       = "SAVINGS_PLANS_COVERAGE"
+  limit_amount      = var.savings_plans_coverage_threshold
+  limit_unit        = "PERCENTAGE"
+  time_unit         = "MONTHLY"
+  time_period_start = "2019-01-01_12:00"
+
+  cost_types {
+    include_credit             = false
+    include_discount           = false
+    include_other_subscription = false
+    include_recurring          = false
+    include_refund             = false
+    include_subscription       = true
+    include_support            = false
+    include_tax                = false
+    include_upfront            = false
+    use_amortized              = false
+    use_blended                = false
+  }
+
+  notification {
+    comparison_operator       = "LESS_THAN"
+    threshold                 = var.savings_plans_coverage_threshold
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "ACTUAL"
+    subscriber_sns_topic_arns = [join("", aws_sns_topic.marbot.*.arn)]
+  }
+}
+
+resource "aws_budgets_budget" "savings_plans_utilization" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (data.aws_region.current.name == "us-east-1" && var.savings_plans_utilization_threshold >= 0 && var.enabled) ? 1 : 0
+
+  name_prefix       = "marbot"
+  budget_type       = "SAVINGS_PLANS_UTILIZATION"
+  limit_amount      = var.savings_plans_utilization_threshold
+  limit_unit        = "PERCENTAGE"
+  time_unit         = "MONTHLY"
+  time_period_start = "2019-01-01_12:00"
+
+  cost_types {
+    include_credit             = false
+    include_discount           = false
+    include_other_subscription = false
+    include_recurring          = false
+    include_refund             = false
+    include_subscription       = true
+    include_support            = false
+    include_tax                = false
+    include_upfront            = false
+    use_amortized              = false
+    use_blended                = false
+  }
+
+  notification {
+    comparison_operator       = "LESS_THAN"
+    threshold                 = var.savings_plans_utilization_threshold
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "ACTUAL"
     subscriber_sns_topic_arns = [join("", aws_sns_topic.marbot.*.arn)]
   }
 }
