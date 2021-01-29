@@ -21,6 +21,18 @@ variable "budget_threshold" {
   default     = -1
 }
 
+variable "savings_plans_coverage_threshold" {
+  type        = number
+  description = "Receive an alert, if your monthly Savings Plans coverage (in percents) is lower than this value (works in us-east-1 only; set to -1 to disable)."
+  default     = -1
+}
+
+variable "savings_plans_utilization_threshold" {
+  type        = number
+  description = "Receive an alert, if your monthly Savings Plans utilization (in percents) is lower than this value (works in us-east-1 only; set to -1 to disable)."
+  default     = -1
+}
+
 variable "trusted_advisor" {
   type        = bool
   description = "Receive an alert, if any Trusted Advisor check turns red (works in us-east-1 only; requires AWS Business Support or higher)."
@@ -36,7 +48,7 @@ variable "root_user_login" {
 variable "cloud_watch_alarm_fired" {
   type        = bool
   description = "Receive an alert, if any CloudWatch Alarm fires (state ALARM; instead of defining actions for each alarm)."
-  default     = false
+  default     = true
 }
 
 variable "cloud_watch_alarm_orphaned" {

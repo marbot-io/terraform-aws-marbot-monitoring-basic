@@ -12,6 +12,12 @@ data "aws_caller_identity" "current" {}
 
 data "aws_region" "current" {}
 
+data "archive_file" "lambda" {
+  type        = "zip"
+  output_path = "${path.module}/lambda.zip"
+  source_dir  = "${path.module}/lambda"
+}
+
 ##########################################################################
 #                                                                        #
 #                                 TOPIC                                  #
@@ -135,7 +141,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.10.2",
+  "Version": "0.11.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -363,14 +369,12 @@ resource "aws_budgets_budget" "cost" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (data.aws_region.current.name == "us-east-1" && var.budget_threshold >= 0 && var.enabled) ? 1 : 0
 
+  name_prefix       = "marbot"
   budget_type       = "COST"
   limit_amount      = var.budget_threshold
   limit_unit        = "USD"
   time_unit         = "MONTHLY"
   time_period_start = "2019-01-01_12:00"
-  cost_filters = {
-    LinkedAccount = data.aws_caller_identity.current.account_id
-  }
 
   cost_types {
     include_credit             = false
@@ -399,6 +403,74 @@ resource "aws_budgets_budget" "cost" {
     threshold                 = 100
     threshold_type            = "PERCENTAGE"
     notification_type         = "FORECASTED"
+    subscriber_sns_topic_arns = [join("", aws_sns_topic.marbot.*.arn)]
+  }
+}
+
+resource "aws_budgets_budget" "savings_plans_coverage" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (data.aws_region.current.name == "us-east-1" && var.savings_plans_coverage_threshold >= 0 && var.enabled) ? 1 : 0
+
+  name_prefix       = "marbot"
+  budget_type       = "SAVINGS_PLANS_COVERAGE"
+  limit_amount      = var.savings_plans_coverage_threshold
+  limit_unit        = "PERCENTAGE"
+  time_unit         = "MONTHLY"
+  time_period_start = "2019-01-01_12:00"
+
+  cost_types {
+    include_credit             = false
+    include_discount           = false
+    include_other_subscription = false
+    include_recurring          = false
+    include_refund             = false
+    include_subscription       = true
+    include_support            = false
+    include_tax                = false
+    include_upfront            = false
+    use_amortized              = false
+    use_blended                = false
+  }
+
+  notification {
+    comparison_operator       = "LESS_THAN"
+    threshold                 = var.savings_plans_coverage_threshold
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "ACTUAL"
+    subscriber_sns_topic_arns = [join("", aws_sns_topic.marbot.*.arn)]
+  }
+}
+
+resource "aws_budgets_budget" "savings_plans_utilization" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (data.aws_region.current.name == "us-east-1" && var.savings_plans_utilization_threshold >= 0 && var.enabled) ? 1 : 0
+
+  name_prefix       = "marbot"
+  budget_type       = "SAVINGS_PLANS_UTILIZATION"
+  limit_amount      = var.savings_plans_utilization_threshold
+  limit_unit        = "PERCENTAGE"
+  time_unit         = "MONTHLY"
+  time_period_start = "2019-01-01_12:00"
+
+  cost_types {
+    include_credit             = false
+    include_discount           = false
+    include_other_subscription = false
+    include_recurring          = false
+    include_refund             = false
+    include_subscription       = true
+    include_support            = false
+    include_tax                = false
+    include_upfront            = false
+    use_amortized              = false
+    use_blended                = false
+  }
+
+  notification {
+    comparison_operator       = "LESS_THAN"
+    threshold                 = var.savings_plans_utilization_threshold
+    threshold_type            = "PERCENTAGE"
+    notification_type         = "ACTUAL"
     subscriber_sns_topic_arns = [join("", aws_sns_topic.marbot.*.arn)]
   }
 }
@@ -442,6 +514,143 @@ resource "aws_cloudwatch_event_target" "root_user_login" {
 
 
 
+resource "aws_iam_role" "cloud_watch_alarm_filter" {
+  count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  name_prefix = "marbot"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "cloud_watch_alarm_filter" {
+  count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  name_prefix = "marbot"
+  role        = join("", aws_iam_role.cloud_watch_alarm_filter.*.id)
+
+  policy = <<-EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Action": "cloudwatch:describeAlarms",
+        "Effect": "Allow",
+        "Resource": "*"
+      },
+      {
+        "Action": "sns:Publish",
+        "Effect": "Allow",
+        "Resource": "${join("", aws_sns_topic.marbot.*.arn)}"
+      },
+      {
+        "Action": [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Effect": "Allow",
+        "Resource": "${join("", aws_cloudwatch_log_group.cloud_watch_alarm_filter.*.arn)}"
+      }
+    ]
+  }
+  EOF
+}
+
+resource "aws_lambda_function" "cloud_watch_alarm_filter" {
+  count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  filename         = data.archive_file.lambda.output_path
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+  function_name    = "marbot-basic-cloud-watch-alarm-filter-${random_id.id8.hex}"
+  role             = join("", aws_iam_role.cloud_watch_alarm_filter.*.arn)
+  handler          = "cloud-watch.handler"
+  runtime          = "nodejs12.x"
+  memory_size      = 1024
+  timeout          = 30
+  environment {
+    variables = {
+      TOPIC_ARN = join("", aws_sns_topic.marbot.*.arn)
+    }
+  }
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "cloud_watch_alarm_filter_errors" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  alarm_name          = "marbot-basic-cloud-watch-alarm-filter-errors-${random_id.id8.hex}"
+  alarm_description   = "Invocations failed due to errors in the function"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 0
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  treat_missing_data  = "notBreaching"
+  dimensions = {
+    FunctionName = join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)
+  }
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "cloud_watch_alarm_filter_throttles" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  alarm_name          = "marbot-basic-cloud-watch-alarm-filter-throttles-${random_id.id8.hex}"
+  alarm_description   = "Invocation attempts that were throttled due to invocation rates exceeding the concurrent limits"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Throttles"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 0
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  treat_missing_data  = "notBreaching"
+  dimensions = {
+    FunctionName = join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)
+  }
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "cloud_watch_alarm_filter" {
+  count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
+
+  name              = "/aws/lambda/${join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)}"
+  retention_in_days = 14
+
+  tags = var.tags
+}
+
+
+
+resource "aws_lambda_permission" "cloud_watch_alarm_fired" {
+  count = (var.cloud_watch_alarm_fired && var.enabled) ? 1 : 0
+
+  function_name = join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)
+  action        = "lambda:InvokeFunction"
+  principal     = "events.amazonaws.com"
+  source_arn    = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_fired.*.arn)
+}
+
 resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_fired" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.cloud_watch_alarm_fired && var.enabled) ? 1 : 0
@@ -473,10 +682,19 @@ resource "aws_cloudwatch_event_target" "cloud_watch_alarm_fired" {
 
   rule      = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_fired.*.name)
   target_id = "marbot"
-  arn       = join("", aws_sns_topic.marbot.*.arn)
+  arn       = join("", aws_lambda_function.cloud_watch_alarm_filter.*.arn)
 }
 
 
+
+resource "aws_lambda_permission" "cloud_watch_alarm_orphaned" {
+  count = (var.cloud_watch_alarm_orphaned && var.enabled) ? 1 : 0
+
+  function_name = join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)
+  action        = "lambda:InvokeFunction"
+  principal     = "events.amazonaws.com"
+  source_arn    = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_orphaned.*.arn)
+}
 
 resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_orphaned" {
   depends_on = [aws_sns_topic_subscription.marbot]
@@ -509,10 +727,19 @@ resource "aws_cloudwatch_event_target" "cloud_watch_alarm_orphaned" {
 
   rule      = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_orphaned.*.name)
   target_id = "marbot"
-  arn       = join("", aws_sns_topic.marbot.*.arn)
+  arn       = join("", aws_lambda_function.cloud_watch_alarm_filter.*.arn)
 }
 
 
+
+resource "aws_lambda_permission" "cloud_watch_alarm_auto_close" {
+  count = (var.cloud_watch_alarm_auto_close && var.enabled) ? 1 : 0
+
+  function_name = join("", aws_lambda_function.cloud_watch_alarm_filter.*.function_name)
+  action        = "lambda:InvokeFunction"
+  principal     = "events.amazonaws.com"
+  source_arn    = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_auto_close.*.arn)
+}
 
 resource "aws_cloudwatch_event_rule" "cloud_watch_alarm_auto_close" {
   depends_on = [aws_sns_topic_subscription.marbot]
@@ -545,7 +772,7 @@ resource "aws_cloudwatch_event_target" "cloud_watch_alarm_auto_close" {
 
   rule      = join("", aws_cloudwatch_event_rule.cloud_watch_alarm_auto_close.*.name)
   target_id = "marbot"
-  arn       = join("", aws_sns_topic.marbot.*.arn)
+  arn       = join("", aws_lambda_function.cloud_watch_alarm_filter.*.arn)
 }
 
 
@@ -1106,6 +1333,131 @@ resource "aws_cloudwatch_event_target" "macie_alert" {
 
 
 
+resource "aws_iam_role" "security_hub_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  name_prefix = "marbot"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": "lambda.amazonaws.com"
+      },
+      "Effect": "Allow"
+    }
+  ]
+}
+EOF
+
+  tags = var.tags
+}
+
+resource "aws_iam_role_policy" "security_hub_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  name_prefix = "marbot"
+  role        = join("", aws_iam_role.security_hub_workflow.*.id)
+
+  policy = <<-EOF
+  {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Action": "securityhub:BatchUpdateFindings",
+        "Effect": "Allow",
+        "Resource": "*"
+      },
+      {
+        "Action": [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Effect": "Allow",
+        "Resource": "${join("", aws_cloudwatch_log_group.security_hub_workflow.*.arn)}"
+      }
+    ]
+  }
+  EOF
+}
+
+resource "aws_lambda_function" "security_hub_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  filename         = data.archive_file.lambda.output_path
+  source_code_hash = data.archive_file.lambda.output_base64sha256
+  function_name    = "marbot-basic-security-hub-finding-workflow-${random_id.id8.hex}"
+  role             = join("", aws_iam_role.security_hub_workflow.*.arn)
+  handler          = "security-hub.handler"
+  runtime          = "nodejs12.x"
+  memory_size      = 1024
+  timeout          = 30
+  tags             = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "security_hub_workflow_errors" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  alarm_name          = "marbot-basic-security-hub-finding-workflow-errors-${random_id.id8.hex}"
+  alarm_description   = "Invocations failed due to errors in the function"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Errors"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 0
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  treat_missing_data  = "notBreaching"
+  dimensions = {
+    FunctionName = join("", aws_lambda_function.security_hub_workflow.*.function_name)
+  }
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "security_hub_workflow_throttles" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  alarm_name          = "marbot-basic-security-hub-finding-workflow-throttles-${random_id.id8.hex}"
+  alarm_description   = "Invocation attempts that were throttled due to invocation rates exceeding the concurrent limits"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Throttles"
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 1
+  comparison_operator = "GreaterThanThreshold"
+  threshold           = 0
+  alarm_actions       = [join("", aws_sns_topic.marbot.*.arn)]
+  treat_missing_data  = "notBreaching"
+  dimensions = {
+    FunctionName = join("", aws_lambda_function.security_hub_workflow.*.function_name)
+  }
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_log_group" "security_hub_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  name              = "/aws/lambda/${join("", aws_lambda_function.security_hub_workflow.*.function_name)}"
+  retention_in_days = 14
+
+  tags = var.tags
+}
+
+resource "aws_lambda_permission" "security_hub_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  function_name = join("", aws_lambda_function.security_hub_workflow.*.function_name)
+  action        = "lambda:InvokeFunction"
+  principal     = "events.amazonaws.com"
+  source_arn    = join("", aws_cloudwatch_event_rule.security_hub_finding.*.arn)
+}
+
 resource "aws_cloudwatch_event_rule" "security_hub_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.security_hub_finding && var.enabled) ? 1 : 0
@@ -1146,6 +1498,14 @@ resource "aws_cloudwatch_event_target" "security_hub_finding" {
   rule      = join("", aws_cloudwatch_event_rule.security_hub_finding.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+resource "aws_cloudwatch_event_target" "security_hub_finding_workflow" {
+  count = (var.security_hub_finding && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.security_hub_finding.*.name)
+  target_id = "marbot-securityhub"
+  arn       = join("", aws_lambda_function.security_hub_workflow.*.arn)
 }
 
 
