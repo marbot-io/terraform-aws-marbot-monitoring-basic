@@ -14,14 +14,12 @@ exports.handler = async (event) => {
     MaxRecords: 1
   }).promise();
   const alarms = [...data.CompositeAlarms, ...data.MetricAlarms];
-  console.log(JSON.stringify(alarms));
   if (alarms.length === 0) {
     return;
   } else {
     const alarm = alarms[0];
     const action = STATE2ACTION[event.detail.state.value];
     const actions = alarm[action];
-    console.log(JSON.stringify(actions));
     if (alarm.ActionsEnabled) {
       if (actions.filter(action => action.includes(':autoscaling:')).length > 0) {
         console.log("drop");
