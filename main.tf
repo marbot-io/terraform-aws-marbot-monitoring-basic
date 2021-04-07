@@ -47,7 +47,7 @@ resource "aws_sns_topic" "marbot" {
   count = var.enabled ? 1 : 0
 
   name_prefix       = "marbot"
-  kms_master_key_id = aws_kms_alias.marbot
+  kms_master_key_id = aws_kms_alias.marbot.arn
   tags              = var.tags
 }
 
