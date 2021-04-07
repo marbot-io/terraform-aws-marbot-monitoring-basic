@@ -18,6 +18,25 @@ data "archive_file" "lambda" {
   source_dir  = "${path.module}/lambda"
 }
 
+
+##########################################################################
+#                                                                        #
+#                               KMS Key                                  #
+#                                                                        #
+##########################################################################
+
+resource "aws_kms_key" "marbot" {
+  description         = "KMS CMK for ${var.module_name}"
+  enable_key_rotation = true
+  tags                = var.tags
+}
+
+resource "aws_kms_alias" "marbot" {
+  name          = "alias/${var.module_name}"
+  target_key_id = aws_kms_key.marbot.key_id
+}
+
+
 ##########################################################################
 #                                                                        #
 #                                 TOPIC                                  #
@@ -26,10 +45,10 @@ data "archive_file" "lambda" {
 
 resource "aws_sns_topic" "marbot" {
   count = var.enabled ? 1 : 0
-  #tfsec:ignore:AWS016
 
-  name_prefix = "marbot"
-  tags        = var.tags
+  name_prefix       = "marbot"
+  kms_master_key_id = aws_kms_alias.marbot
+  tags              = var.tags
 }
 
 resource "aws_sns_topic_policy" "marbot" {
