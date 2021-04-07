@@ -26,6 +26,7 @@ data "archive_file" "lambda" {
 
 resource "aws_sns_topic" "marbot" {
   count = var.enabled ? 1 : 0
+  #tfsec:ignore:AWS016
 
   name_prefix = "marbot"
   tags        = var.tags
