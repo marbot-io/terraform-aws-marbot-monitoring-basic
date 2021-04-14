@@ -595,7 +595,7 @@ resource "aws_lambda_function" "cloud_watch_alarm_filter" {
   depends_on = [data.archive_file.lambda]
   count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
   
-  filename         = data.archive_file.lambda.output_path
+  filename         = "${path.module}/lambda.zip"
   source_code_hash = data.archive_file.lambda.output_base64sha256
   function_name    = "marbot-basic-cloud-watch-alarm-filter-${random_id.id8.hex}"
   role             = join("", aws_iam_role.cloud_watch_alarm_filter.*.arn)
