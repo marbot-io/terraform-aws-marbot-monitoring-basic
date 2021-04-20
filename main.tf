@@ -25,7 +25,7 @@ data "archive_file" "lambda" {
 ##########################################################################
 
 resource "aws_sns_topic" "marbot" {
-  # checkov:skip=CKV_AWS_26: ADD REASON
+  # checkov:skip=CKV_AWS_26: No PII in topics at this time
   # tfsec:ignore:AWS016
   count = var.enabled ? 1 : 0
 
