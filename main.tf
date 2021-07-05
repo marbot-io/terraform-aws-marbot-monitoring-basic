@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.12.2",
+  "Version": "0.12.3",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -564,7 +564,7 @@ resource "aws_iam_role_policy" "cloud_watch_alarm_filter" {
           "logs:PutLogEvents"
         ],
         "Effect": "Allow",
-        "Resource": "${join("", aws_cloudwatch_log_group.cloud_watch_alarm_filter.*.arn)}"
+        "Resource": "${join("", aws_cloudwatch_log_group.cloud_watch_alarm_filter.*.arn)}:*"
       }
     ]
   }
@@ -1378,7 +1378,7 @@ resource "aws_iam_role_policy" "security_hub_workflow" {
           "logs:PutLogEvents"
         ],
         "Effect": "Allow",
-        "Resource": "${join("", aws_cloudwatch_log_group.security_hub_workflow.*.arn)}"
+        "Resource": "${join("", aws_cloudwatch_log_group.security_hub_workflow.*.arn)}:*"
       }
     ]
   }
