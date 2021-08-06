@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.12.3",
+  "Version": "0.13.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -1746,6 +1746,35 @@ resource "aws_cloudwatch_event_target" "iot_analytics_dataset_alert" {
   count = (var.iot_analytics_dataset_alert && var.enabled) ? 1 : 0
 
   rule      = join("", aws_cloudwatch_event_rule.iot_analytics_dataset_alert.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "acm_certificate_approaching_expiration" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.acm_certificate_approaching_expiration && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-acm-certificate-expiration-${random_id.id8.hex}"
+  description   = "Approaching expiration from ACM Certificate. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.acm"
+  ],
+  "detail-type": [
+    "ACM Certificate Approaching Expiration"
+  ]
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "acm_certificate_approaching_expiration" {
+  count = (var.acm_certificate_approaching_expiration && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.acm_certificate_approaching_expiration.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
