@@ -213,6 +213,18 @@ variable "es_software_update_failed" {
   default     = true
 }
 
+variable "backup_failed" {
+  type        = bool
+  description = "Receive an alert, if AWS Backup fails."
+  default     = true
+}
+
+variable "athena_failed" {
+  type        = bool
+  description = "Receive an alert, if Athena fails."
+  default     = true
+}
+
 variable "code_pipeline_notifications" {
   type        = bool
   description = "Receive a notification, if a CodePipeline pipeline succeedes."
@@ -258,6 +270,12 @@ variable "es_software_update_notifications" {
 variable "application_auto_scaling_notifications" {
   type        = bool
   description = "Receive notifications about Application Auto Scaling Scaling Activities."
+  default     = true
+}
+
+variable "backup_notifications" {
+  type        = bool
+  description = "Receive notifications about AWS Backup activities."
   default     = true
 }
 

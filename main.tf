@@ -1910,3 +1910,109 @@ resource "aws_cloudwatch_event_target" "application_auto_scaling_notifications" 
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
+
+
+
+resource "aws_cloudwatch_event_rule" "backup_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.backup_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-backup-failed-${random_id.id8.hex}"
+  description   = "AWS Backup failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.backup"
+  ],
+  "detail-type": [
+    "Backup Job State Change",
+    "Copy Job State Change",
+    "Restore Job State Change"
+  ],
+  "detail": {
+    "state": [
+      "FAILED"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "backup_failed" {
+  count = (var.backup_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.backup_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "backup_notifications" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.backup_notifications && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-backup-notifications-${random_id.id8.hex}"
+  description   = "Notifications from AWS Backup. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.backup"
+  ],
+  "detail-type": [
+    "Backup Job State Change",
+    "Copy Job State Change",
+    "Restore Job State Change"
+  ],
+  "detail": {
+    "state": [
+      "COMPLETED"
+  ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "backup_notifications" {
+  count = (var.backup_notifications && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.backup_notifications.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "athena_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.athena_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-athena-failed-${random_id.id8.hex}"
+  description   = "Athena failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.athena"
+  ],
+  "detail-type": [
+    "Athena Query State Change"
+  ],
+  "detail": {
+    "currentState": [
+      "FAILED"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "athena_failed" {
+  count = (var.athena_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.athena_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
