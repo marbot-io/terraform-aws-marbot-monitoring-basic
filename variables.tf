@@ -225,6 +225,12 @@ variable "athena_failed" {
   default     = true
 }
 
+variable "app_flow_failed" {
+  type        = bool
+  description = "Receive an alert, if AppFlow fails."
+  default     = true
+}
+
 variable "code_pipeline_notifications" {
   type        = bool
   description = "Receive a notification, if a CodePipeline pipeline succeedes."

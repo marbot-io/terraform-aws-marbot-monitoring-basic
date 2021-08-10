@@ -991,13 +991,7 @@ resource "aws_cloudwatch_event_rule" "health_issue" {
   ],
   "detail-type": [
     "AWS Health Event"
-  ],
-  "detail": {
-    "eventTypeCategory": [
-      "issue",
-      "scheduledChange"
-    ]
-  }
+  ]
 }
 JSON
 }
@@ -2013,6 +2007,70 @@ resource "aws_cloudwatch_event_target" "athena_failed" {
   count = (var.athena_failed && var.enabled) ? 1 : 0
 
   rule      = join("", aws_cloudwatch_event_rule.athena_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "app_flow_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.app_flow_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-app-flow-failed-${random_id.id8.hex}"
+  description   = "AppFlow failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.appflow"
+  ],
+  "detail-type": [
+    "AppFlow End Flow Run Report"
+  ],
+  "detail": {
+    "status": [
+      "Execution Failed"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "app_flow_failed" {
+  count = (var.app_flow_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.app_flow_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "app_flow_deactivated" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.app_flow_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-app-flow-deactivated-${random_id.id8.hex}"
+  description   = "AppFlow deactivated. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.appflow"
+  ],
+  "detail-type": [
+    "AppFlow Event Flow Deactivated",
+    "AppFlow Scheduled Flow Deactivated"
+  ]
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "app_flow_deactivated" {
+  count = (var.app_flow_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.app_flow_deactivated.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
