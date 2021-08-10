@@ -231,6 +231,12 @@ variable "app_flow_failed" {
   default     = true
 }
 
+variable "ec2_fleet_failed" {
+  type        = bool
+  description = "Receive an alert, if EC2 (Spot) Fleet fails"
+  default     = true
+}
+
 variable "code_pipeline_notifications" {
   type        = bool
   description = "Receive a notification, if a CodePipeline pipeline succeedes."

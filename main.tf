@@ -2112,3 +2112,62 @@ resource "aws_cloudwatch_event_target" "app_flow_deactivated" {
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
+
+
+
+resource "aws_cloudwatch_event_rule" "ec2_fleet_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ec2_fleet_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ec2-fleet-failed-${random_id.id8.hex}"
+  description   = "EC2 Fleet failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ec2fleet"
+  ],
+  "detail-type": [
+    "EC2 Fleet Error"
+  ]
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ec2_fleet_failed" {
+  count = (var.ec2_fleet_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ec2_fleet_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "ec2_spot_fleet_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ec2_fleet_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ec2-spot-fleet-failed-${random_id.id8.hex}"
+  description   = "EC2 Spot Fleet failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ec2spotfleet"
+  ],
+  "detail-type": [
+    "EC2 Spot Fleet Error"
+  ]
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ec2_spot_fleet_failed" {
+  count = (var.ec2_fleet_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ec2_spot_fleet_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
