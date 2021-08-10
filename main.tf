@@ -908,9 +908,47 @@ resource "aws_cloudwatch_event_target" "code_commit_pull_request_notifications" 
 }
 
 
+
+resource "aws_cloudwatch_event_rule" "code_build_failed_without_initiator_code_pipeline" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.code_build_failed && var.code_pipeline_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-code-build-failed-${random_id.id8.hex}"
+  description   = "A CodeBuild build failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.codebuild"
+  ],
+  "detail-type": [
+    "CodeBuild Build State Change"
+  ],
+  "detail": {
+    "build-status": [
+      "FAILED"
+    ],
+    "additional-information": {
+      "initiator": [{"anything-but": {"prefix": "codepipeline/"}}]
+    }
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "code_build_failed_without_initiator_code_pipeline" {
+  count = (var.code_build_failed && var.code_pipeline_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.code_build_failed_without_initiator_code_pipeline.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
 resource "aws_cloudwatch_event_rule" "code_build_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (var.code_build_failed && var.enabled) ? 1 : 0
+  count      = (var.code_build_failed && var.code_pipeline_failed == false && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-code-build-failed-${random_id.id8.hex}"
   description   = "A CodeBuild build failed. (created by marbot)"
@@ -933,7 +971,7 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "code_build_failed" {
-  count = (var.code_build_failed && var.enabled) ? 1 : 0
+  count = (var.code_build_failed && var.code_pipeline_failed == false && var.enabled) ? 1 : 0
 
   rule      = join("", aws_cloudwatch_event_rule.code_build_failed.*.name)
   target_id = "marbot"
