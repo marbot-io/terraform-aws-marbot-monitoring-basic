@@ -159,6 +159,12 @@ variable "security_hub_finding" {
   default     = true
 }
 
+variable "security_hub_insight" {
+  type        = bool
+  description = "Receive an alert, if a SecurityHub insight is created."
+  default     = true
+}
+
 variable "ops_works_deployment_failed" {
   type        = bool
   description = "Receive an alert, if an OpsWorks deployment fails."
@@ -201,6 +207,36 @@ variable "iot_analytics_dataset_alert" {
   default     = true
 }
 
+variable "es_software_update_failed" {
+  type        = bool
+  description = "Receive an alert, if an ES software update fails."
+  default     = true
+}
+
+variable "backup_failed" {
+  type        = bool
+  description = "Receive an alert, if AWS Backup fails."
+  default     = true
+}
+
+variable "athena_failed" {
+  type        = bool
+  description = "Receive an alert, if Athena fails."
+  default     = true
+}
+
+variable "app_flow_failed" {
+  type        = bool
+  description = "Receive an alert, if AppFlow fails."
+  default     = true
+}
+
+variable "ec2_fleet_failed" {
+  type        = bool
+  description = "Receive an alert, if EC2 (Spot) Fleet fails"
+  default     = true
+}
+
 variable "code_pipeline_notifications" {
   type        = bool
   description = "Receive a notification, if a CodePipeline pipeline succeedes."
@@ -231,10 +267,27 @@ variable "ami_update_notification_amazon_linux2" {
   default     = true
 }
 
-
 variable "acm_certificate_approaching_expiration" {
   type        = bool
   description = "Receive a notification, if an ACM certificate approaches expiration."
+  default     = true
+}
+
+variable "es_software_update_notifications" {
+  type        = bool
+  description = "Receive notifications about ES software updates."
+  default     = true
+}
+
+variable "application_auto_scaling_notifications" {
+  type        = bool
+  description = "Receive notifications about Application Auto Scaling Scaling Activities."
+  default     = true
+}
+
+variable "backup_notifications" {
+  type        = bool
+  description = "Receive notifications about AWS Backup activities."
   default     = true
 }
 
