@@ -237,6 +237,12 @@ variable "ec2_fleet_failed" {
   default     = true
 }
 
+variable "xray_insight_update" {
+  type        = bool
+  description = "Receive an alert, if X-Ray Insight detects a fault."
+  default     = true
+}
+
 variable "code_pipeline_notifications" {
   type        = bool
   description = "Receive a notification, if a CodePipeline pipeline succeedes."
