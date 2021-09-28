@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.14.1",
+  "Version": "0.15.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -2174,3 +2174,39 @@ resource "aws_cloudwatch_event_target" "ec2_spot_fleet_failed" {
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
+
+
+resource "aws_cloudwatch_event_rule" "xray_insight_update" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.xray_insight_update && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-xray-insight-update-${random_id.id8.hex}"
+  description   = "X-Ray Insight fault detected. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.xray"
+  ],
+  "detail-type": [
+    "AWS X-Ray Insight Update"
+  ],
+  "detail": {
+    "State": [
+      "ACTIVE"
+    ],
+    "Categories": [
+      "FAULT"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "xray_insight_update" {
+  count = (var.xray_insight_update && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.xray_insight_update.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
