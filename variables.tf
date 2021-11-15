@@ -117,9 +117,33 @@ variable "ebs_failed" {
   default     = true
 }
 
-variable "ssm_failed" {
+variable "ssm_failed" { # should be called ssm_maintenance_window_Failed, but was not changed for backward compatibility
   type        = bool
-  description = "Receive an alert, if any SSM maintenance window execution fails."
+  description = "Receive an alert, if any SSM Maintenance Window execution fails."
+  default     = true
+}
+
+variable "ssm_automation_failed" {
+  type        = bool
+  description = "Receive an alert, if any SSM Automation execution fails."
+  default     = true
+}
+
+variable "ssm_configuration_compliance_failed" {
+  type        = bool
+  description = "Receive an alert, if any SSM Configuration Compliance check fails."
+  default     = true
+}
+
+variable "ssm_command_failed" {
+  type        = bool
+  description = "Receive an alert, if any SSM Command execution fails."
+  default     = true
+}
+
+variable "ssm_state_manager_failed" {
+  type        = bool
+  description = "Receive an alert, if any SSM State Manager association fails."
   default     = true
 }
 

@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.15.0",
+  "Version": "0.16.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -1177,12 +1177,12 @@ resource "aws_cloudwatch_event_target" "ebs_failed" {
 
 
 
-resource "aws_cloudwatch_event_rule" "ssm_failed" {
+resource "aws_cloudwatch_event_rule" "ssm_failed" { # should be called ssm_maintenance_window, but was not changed for backward compatibility
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ssm_failed && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-ssm-failed-${random_id.id8.hex}"
-  description   = "SSM maintenance window execution failed. (created by marbot)"
+  description   = "SSM Maintenance Window execution failed. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
 {
@@ -1202,10 +1202,153 @@ resource "aws_cloudwatch_event_rule" "ssm_failed" {
 JSON
 }
 
-resource "aws_cloudwatch_event_target" "ssm_failed" {
+resource "aws_cloudwatch_event_target" "ssm_failed" { # should be called ssm_maintenance_window_failed, but was not changed for backward compatibility
   count = (var.ssm_failed && var.enabled) ? 1 : 0
 
   rule      = join("", aws_cloudwatch_event_rule.ssm_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "ssm_automation_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ssm_automation_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ssm-automation-failed-${random_id.id8.hex}"
+  description   = "SSM Automation execution failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ssm"
+  ],
+  "detail-type": [
+    "EC2 Automation Execution Status-change Notification"
+  ],
+  "detail": {
+    "status": [
+      "Failed",
+      "TimedOut"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ssm_automation_failed" {
+  count = (var.ssm_automation_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ssm_automation_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "ssm_configuration_compliance_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ssm_configuration_compliance_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ssm-compliance-failed-${random_id.id8.hex}"
+  description   = "SSM Configuration Compliance check failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ssm"
+  ],
+  "detail-type": [
+    "Configuration Compliance State Change"
+  ],
+  "detail": {
+    "compliance-status": [
+      "non_compliant"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ssm_configuration_compliance_failed" {
+  count = (var.ssm_configuration_compliance_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ssm_configuration_compliance_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "ssm_command_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ssm_command_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ssm-command-failed-${random_id.id8.hex}"
+  description   = "SSM Command execution failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ssm"
+  ],
+  "detail-type": [
+    "EC2 Command Status-change Notification"
+  ],
+  "detail": {
+    "status": [
+      "Delivery Timed Out",
+      "Execution Timed Out",
+      "Failed",
+      "Incomplete",
+      "Rate Exceeded",
+      "Access Denied",
+      "No Instances In Tag"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ssm_command_failed" {
+  count = (var.ssm_command_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ssm_command_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "ssm_state_manager_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ssm_state_manager_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ssm-state-manager-failed-${random_id.id8.hex}"
+  description   = "SSM State Manager association failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ssm"
+  ],
+  "detail-type": [
+    "EC2 State Manager Association State Change"
+  ],
+  "detail": {
+    "status": [
+      "Failed"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ssm_state_manager_failed" {
+  count = (var.ssm_state_manager_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ssm_state_manager_failed.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
