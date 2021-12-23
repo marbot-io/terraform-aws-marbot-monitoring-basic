@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.16.0",
+  "Version": "0.17.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -1470,6 +1470,74 @@ resource "aws_cloudwatch_event_target" "ecs_service_failed" {
   count = (var.ecs_service_failed && var.enabled) ? 1 : 0
 
   rule      = join("", aws_cloudwatch_event_rule.ecs_service_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "ecs_deployment_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ecs_deployment_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ecs-deployment-failed-${random_id.id8.hex}"
+  description   = "ECS Deployment failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ecs"
+  ],
+  "detail-type": [
+    "ECS Deployment State Change"
+  ],
+  "detail": {
+    "eventName": [
+      "SERVICE_DEPLOYMENT_FAILED"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ecs_deployment_failed" {
+  count = (var.ecs_deployment_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ecs_deployment_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "ecs_deployment_notifications" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ecs_deployment_notifications && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ecs-deployment-notifications-${random_id.id8.hex}"
+  description   = "ECS Service deployment succeeded. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ecs"
+  ],
+  "detail-type": [
+    "ECS Deployment State Change"
+  ],
+  "detail": {
+    "eventName": [
+      "SERVICE_DEPLOYMENT_COMPLETED"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ecs_deployment_notifications" {
+  count = (var.ecs_deployment_notifications && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ecs_deployment_notifications.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }

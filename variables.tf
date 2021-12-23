@@ -171,6 +171,12 @@ variable "ecs_service_failed" {
   default     = true
 }
 
+variable "ecs_deployment_failed" {
+  type        = bool
+  description = "Receive an alert, if any ECS deployment fails.'"
+  default     = true
+}
+
 variable "macie_alert" {
   type        = bool
   description = "Receive an alert, if Macie fires an alert."
@@ -318,6 +324,12 @@ variable "application_auto_scaling_notifications" {
 variable "backup_notifications" {
   type        = bool
   description = "Receive notifications about AWS Backup activities."
+  default     = true
+}
+
+variable "ecs_deployment_notifications" {
+  type        = bool
+  description = "Receive notifications when AWS deployments succeed."
   default     = true
 }
 
