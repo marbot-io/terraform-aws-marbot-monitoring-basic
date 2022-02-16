@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.17.0",
+  "Version": "0.18.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -2418,6 +2418,43 @@ resource "aws_cloudwatch_event_target" "xray_insight_update" {
   count = (var.xray_insight_update && var.enabled) ? 1 : 0
 
   rule      = join("", aws_cloudwatch_event_rule.xray_insight_update.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+resource "aws_cloudwatch_event_rule" "elastic_beanstalk_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.elastic_beanstalk_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-elastic-beanstalk-failed-${random_id.id8.hex}"
+  description   = "Elastic Beanstalk failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [
+    "aws.elasticbeanstalk"
+  ],
+  "detail-type": [
+    "Elastic Beanstalk resource status change",
+    "Other resource status change",
+    "Health status change",
+    "ManagedUpdateStatusChangeEnabled"
+  ],
+  "detail": {
+    "Severity": [
+      "WARN",
+      "ERROR"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "elastic_beanstalk_failed" {
+  count = (var.elastic_beanstalk_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.elastic_beanstalk_failed.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
