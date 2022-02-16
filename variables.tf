@@ -333,6 +333,12 @@ variable "ecs_deployment_notifications" {
   default     = true
 }
 
+variable "elastic_beanstalk_failed" {
+  type        = bool
+  description = "Receive an alert, if Elastic Beanstalk fails."
+  default     = true
+}
+
 variable "stage" {
   type        = string
   description = "marbot stage (never change this!)."
