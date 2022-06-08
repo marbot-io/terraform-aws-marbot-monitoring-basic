@@ -1,7 +1,7 @@
 terraform {
   required_version = ">= 0.12.0"
   required_providers {
-    aws    = ">= 2.48.0"
+    aws    = ">= 4.15.0"
     random = ">= 2.2"
   }
 }
@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.18.0",
+  "Version": "0.19.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -579,7 +579,7 @@ resource "aws_lambda_function" "cloud_watch_alarm_filter" {
   function_name    = "marbot-basic-cloud-watch-alarm-filter-${random_id.id8.hex}"
   role             = join("", aws_iam_role.cloud_watch_alarm_filter.*.arn)
   handler          = "cloud-watch.handler"
-  runtime          = "nodejs12.x"
+  runtime          = "nodejs16.x"
   memory_size      = 1024
   timeout          = 30
   environment {
@@ -1637,7 +1637,7 @@ resource "aws_lambda_function" "security_hub_workflow" {
   function_name    = "marbot-basic-security-hub-finding-workflow-${random_id.id8.hex}"
   role             = join("", aws_iam_role.security_hub_workflow.*.arn)
   handler          = "security-hub.handler"
-  runtime          = "nodejs12.x"
+  runtime          = "nodejs16.x"
   memory_size      = 1024
   timeout          = 30
   tags             = var.tags
