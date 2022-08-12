@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.19.0",
+  "Version": "0.20.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -1425,7 +1425,8 @@ resource "aws_cloudwatch_event_rule" "ec2_spot_instance_interruption" {
     "aws.ec2"
   ],
   "detail-type": [
-    "EC2 Spot Instance Interruption Warning"
+    "EC2 Spot Instance Interruption Warning",
+    "EC2 Instance Rebalance Recommendation"
   ]
 }
 JSON

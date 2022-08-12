@@ -161,7 +161,7 @@ variable "glue_job_failed" {
 
 variable "ec2_spot_instance_interruption" {
   type        = bool
-  description = "Receive an alert, if any EC2 Spot instance is interrupted."
+  description = "Receive a notification, if any EC2 Spot instance is interrupted."
   default     = true
 }
 
