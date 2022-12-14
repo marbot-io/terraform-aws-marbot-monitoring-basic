@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.21.0",
+  "Version": "0.22.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -518,7 +518,8 @@ resource "aws_cloudwatch_event_target" "root_user_login" {
 resource "aws_iam_role" "cloud_watch_alarm_filter" {
   count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
 
-  name_prefix = "marbot"
+  name_prefix          = "marbot"
+  permissions_boundary = var.permissions_boundary_policy_arn
 
   assume_role_policy = <<EOF
 {
@@ -1584,7 +1585,8 @@ resource "aws_cloudwatch_event_target" "macie_alert" {
 resource "aws_iam_role" "security_hub_workflow" {
   count = (var.security_hub_finding && var.enabled) ? 1 : 0
 
-  name_prefix = "marbot"
+  name_prefix          = "marbot"
+  permissions_boundary = var.permissions_boundary_policy_arn
 
   assume_role_policy = <<EOF
 {

@@ -15,6 +15,12 @@ variable "tags" {
   default     = {}
 }
 
+variable "permissions_boundary_policy_arn" {
+  description = "IAM policy ARN used as a permission boundary for all created IAM roles."
+  type        = string
+  default     = ""
+}
+
 variable "budget_threshold" {
   type        = number
   description = "Receive an alert, if your monthly AWS costs (in USD) are higher than this value (works in us-east-1 only; set to -1 to disable)."
