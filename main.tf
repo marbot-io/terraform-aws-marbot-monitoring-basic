@@ -1548,6 +1548,77 @@ resource "aws_cloudwatch_event_target" "ecs_deployment_notifications" {
 
 
 
+resource "aws_cloudwatch_event_rule" "ecs_spot_placement_failure" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ecs_spot_interruption && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ecs-spot-placement-failure-${random_id.id8.hex}"
+  description   = "ECS service scheduler was unable to acquire any Fargate Spot capacity. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ecs"
+  ],
+  "detail-type": [
+    "ECS Service Action"
+  ],
+  "detail": {
+    "eventName": [
+      "SERVICE_TASK_PLACEMENT_FAILURE"
+    ],
+    "reason": [
+      "RESOURCE:FARGATE"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ecs_spot_placement_failure" {
+  count = (var.ecs_spot_interruption && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ecs_spot_placement_failure.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "ecs_spot_interruption" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ecs_spot_interruption && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ecs-spot-interruption-${random_id.id8.hex}"
+  description   = "ECS task is stopping due to Fargate Spot interruption. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ecs"
+  ],
+  "detail-type": [
+    "ECS Task State Change"
+  ],
+  "detail": {
+    "stopCode": [
+      "TerminationNotice"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ecs_spot_interruption" {
+  count = (var.ecs_spot_interruption && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ecs_spot_interruption.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
 resource "aws_cloudwatch_event_rule" "macie_alert" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.macie_alert && var.enabled) ? 1 : 0

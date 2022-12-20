@@ -179,7 +179,13 @@ variable "ecs_service_failed" {
 
 variable "ecs_deployment_failed" {
   type        = bool
-  description = "Receive an alert, if any ECS deployment fails.'"
+  description = "Receive an alert, if any ECS deployment fails."
+  default     = true
+}
+
+variable "ecs_spot_interruption" {
+  type        = bool
+  description = "Receive an alert, if an ECS Fargate Spot task gets interrupted or fails to launch."
   default     = true
 }
 
