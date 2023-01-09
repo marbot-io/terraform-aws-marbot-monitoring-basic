@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.22.0",
+  "Version": "0.23.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -484,7 +484,7 @@ resource "aws_budgets_budget" "savings_plans_utilization" {
 
 resource "aws_cloudwatch_event_rule" "root_user_login" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (var.root_user_login && var.enabled) ? 1 : 0
+  count      = (data.aws_region.current.name == "us-east-1" && var.root_user_login && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-root-user-login-${random_id.id8.hex}"
   description   = "A root user login was detected, better use IAM users instead. (created by marbot)"
@@ -506,7 +506,7 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "root_user_login" {
-  count = (var.root_user_login && var.enabled) ? 1 : 0
+  count      = (data.aws_region.current.name == "us-east-1" && var.root_user_login && var.enabled) ? 1 : 0
 
   rule      = join("", aws_cloudwatch_event_rule.root_user_login.*.name)
   target_id = "marbot"
