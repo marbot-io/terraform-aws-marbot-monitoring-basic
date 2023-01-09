@@ -47,7 +47,7 @@ variable "trusted_advisor" {
 
 variable "root_user_login" {
   type        = bool
-  description = "Receive an alert, if a root user login is performed."
+  description = "Receive an alert, if a root user login is performed (works in us-east-1 only)."
   default     = true
 }
 
