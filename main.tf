@@ -1617,14 +1617,12 @@ resource "aws_cloudwatch_event_target" "ecs_spot_interruption" {
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
 
-
-
-resource "aws_cloudwatch_event_rule" "macie_alert" {
+resource "aws_cloudwatch_event_rule" "macie_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.macie_alert && var.enabled) ? 1 : 0
 
-  name          = "marbot-basic-macie-alert-${random_id.id8.hex}"
-  description   = "Alerts (risk >= high) from AWS Macie. (created by marbot)"
+  name          = "marbot-basic-macie-finding-${random_id.id8.hex}"
+  description   = "Findings (severity >= high) from AWS Macie. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
 {
@@ -1632,26 +1630,24 @@ resource "aws_cloudwatch_event_rule" "macie_alert" {
     "aws.macie"
   ],
   "detail-type": [
-    "Macie Alert"
+    "Macie Finding"
   ],
   "detail": {
-    "trigger": {
-      "risk": [{"numeric": [">=", 8]}]
+    "severity": {
+      "score": [{"numeric": [">=", 3]}]
     }
   }
 }
 JSON
 }
 
-resource "aws_cloudwatch_event_target" "macie_alert" {
+resource "aws_cloudwatch_event_target" "macie_finding" {
   count = (var.macie_alert && var.enabled) ? 1 : 0
 
-  rule      = join("", aws_cloudwatch_event_rule.macie_alert.*.name)
+  rule      = join("", aws_cloudwatch_event_rule.macie_finding.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
-
-
 
 resource "aws_iam_role" "security_hub_workflow" {
   count = (var.security_hub_finding && var.enabled) ? 1 : 0
