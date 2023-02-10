@@ -189,9 +189,9 @@ variable "ecs_spot_interruption" {
   default     = true
 }
 
-variable "macie_alert" {
+variable "macie_finding" {
   type        = bool
-  description = "Receive an alert, if Macie fires an alert."
+  description = "Receive an alert, if Macie generates a new finding."
   default     = true
 }
 
