@@ -1642,7 +1642,7 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "macie_finding" {
-  count = (var.macie_alert && var.enabled) ? 1 : 0
+  count = (var.macie_finding && var.enabled) ? 1 : 0
 
   rule      = join("", aws_cloudwatch_event_rule.macie_finding.*.name)
   target_id = "marbot"
