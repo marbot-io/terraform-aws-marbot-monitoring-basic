@@ -77,7 +77,7 @@ data "aws_iam_policy_document" "topic_policy" {
     }
   }
 
-  statement {
+  statement { # SES https://docs.aws.amazon.com/ses/latest/dg/configure-sns-notifications.html
     sid       = "Sid3"
     effect    = "Allow"
     actions   = ["sns:Publish"]
@@ -506,7 +506,7 @@ JSON
 }
 
 resource "aws_cloudwatch_event_target" "root_user_login" {
-  count      = (data.aws_region.current.name == "us-east-1" && var.root_user_login && var.enabled) ? 1 : 0
+  count = (data.aws_region.current.name == "us-east-1" && var.root_user_login && var.enabled) ? 1 : 0
 
   rule      = join("", aws_cloudwatch_event_rule.root_user_login.*.name)
   target_id = "marbot"
@@ -1619,7 +1619,7 @@ resource "aws_cloudwatch_event_target" "ecs_spot_interruption" {
 
 resource "aws_cloudwatch_event_rule" "macie_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (var.macie_alert && var.enabled) ? 1 : 0
+  count      = (var.macie_finding && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-macie-finding-${random_id.id8.hex}"
   description   = "Findings (severity >= high) from AWS Macie. (created by marbot)"
