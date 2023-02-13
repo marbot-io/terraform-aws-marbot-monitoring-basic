@@ -1445,6 +1445,42 @@ resource "aws_cloudwatch_event_target" "ec2_spot_instance_interruption" {
 
 
 
+resource "aws_cloudwatch_event_rule" "ecs_task_failed" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ecs_task_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ecs-task-failed-${random_id.id8.hex}"
+  description   = "ECS Task failed. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ecs"
+  ],
+  "detail-type": [
+    "ECS Task State Change"
+  ],
+  "detail": {
+    "lastStatus": ["STOPPED"],
+    "stopCode": [
+      "TaskFailedToStart",
+      "EssentialContainerExited"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ecs_task_failed" {
+  count = (var.ecs_task_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ecs_task_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
 resource "aws_cloudwatch_event_rule" "ecs_service_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ecs_service_failed && var.enabled) ? 1 : 0

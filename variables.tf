@@ -171,6 +171,12 @@ variable "ec2_spot_instance_interruption" {
   default     = true
 }
 
+variable "ecs_task_failed" {
+  type        = bool
+  description = "Receive an alert, if any ECS task fails."
+  default     = true
+}
+
 variable "ecs_service_failed" {
   type        = bool
   description = "Receive an alert, if any ECS service fails."
