@@ -1461,7 +1461,7 @@ resource "aws_cloudwatch_event_rule" "ecs_task_failed_to_start" {
     "ECS Task State Change"
   ],
   "detail": {
-    "group": [{"anything-but": {"prefix": "service:"}}]
+    "group": [{"anything-but": {"prefix": "service:"}}],
     "lastStatus": ["STOPPED"],
     "stopCode": ["TaskFailedToStart"]
   }
