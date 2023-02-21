@@ -251,7 +251,7 @@ variable "iot_analytics_dataset_alert" {
 
 variable "es_software_update_failed" {
   type        = bool
-  description = "Receive an alert, if an ES software update fails."
+  description = "Receive an alert, if an Elasticsearch/OpenSearch software update fails."
   default     = true
 }
 
@@ -323,7 +323,7 @@ variable "acm_certificate_approaching_expiration" {
 
 variable "es_software_update_notifications" {
   type        = bool
-  description = "Receive notifications about ES software updates."
+  description = "Receive notifications about Elasticsearch/OpenSearch software updates."
   default     = true
 }
 
