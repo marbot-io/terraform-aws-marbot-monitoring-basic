@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.24.1",
+  "Version": "0.25.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -2137,7 +2137,7 @@ resource "aws_cloudwatch_event_rule" "es_software_update_failed" {
   count      = (var.es_software_update_failed && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-es-software-update-failed-${random_id.id8.hex}"
-  description   = "Alerts from ES software updates. (created by marbot)"
+  description   = "Alerts from Elasticsearch/OpenSearch software updates. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
 {
@@ -2145,7 +2145,8 @@ resource "aws_cloudwatch_event_rule" "es_software_update_failed" {
     "aws.es"
   ],
   "detail-type": [
-    "Amazon ES Service Software Update Notification"
+    "Amazon ES Service Software Update Notification",
+    "Amazon OpenSearch Service Software Update Notification"
   ],
   "detail": {
     "status": [
@@ -2171,7 +2172,7 @@ resource "aws_cloudwatch_event_rule" "es_software_update_notifications" {
   count      = (var.es_software_update_notifications && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-es-software-update-notifications-${random_id.id8.hex}"
-  description   = "Notifications from ES software updates. (created by marbot)"
+  description   = "Notifications from Elasticsearch/OpenSearch software updates. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
 {
@@ -2179,7 +2180,8 @@ resource "aws_cloudwatch_event_rule" "es_software_update_notifications" {
     "aws.es"
   ],
   "detail-type": [
-    "Amazon ES Service Software Update Notification"
+    "Amazon ES Service Software Update Notification",
+    "Amazon OpenSearch Service Software Update Notification"
   ],
   "detail": {
     "status": [
