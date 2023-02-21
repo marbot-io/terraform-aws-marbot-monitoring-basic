@@ -1445,6 +1445,77 @@ resource "aws_cloudwatch_event_target" "ec2_spot_instance_interruption" {
 
 
 
+resource "aws_cloudwatch_event_rule" "ecs_task_failed_to_start" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ecs_task_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ecs-task-failed-to-start-${random_id.id8.hex}"
+  description   = "ECS Task failed: Task failed to start. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ecs"
+  ],
+  "detail-type": [
+    "ECS Task State Change"
+  ],
+  "detail": {
+    "group": [{"anything-but": {"prefix": "service:"}}],
+    "lastStatus": ["STOPPED"],
+    "stopCode": ["TaskFailedToStart"]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ecs_task_failed_to_start" {
+  count = (var.ecs_task_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ecs_task_failed_to_start.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
+resource "aws_cloudwatch_event_rule" "ecs_task_failed_non_zero" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.ecs_task_failed && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-ecs-task-failed-non-zero-${random_id.id8.hex}"
+  description   = "ECS Task failed: Essential container exited with non zero exit code. (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [ 
+    "aws.ecs"
+  ],
+  "detail-type": [
+    "ECS Task State Change"
+  ],
+  "detail": {
+    "group": [{"anything-but": {"prefix": "service:"}}],
+    "lastStatus": ["STOPPED"],
+    "stopCode": ["EssentialContainerExited"],
+    "containers": {
+      "exitCode": [{"anything-but": 0}]
+    }
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "ecs_task_failed_non_zero" {
+  count = (var.ecs_task_failed && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.ecs_task_failed_non_zero.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+
+
 resource "aws_cloudwatch_event_rule" "ecs_service_failed" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ecs_service_failed && var.enabled) ? 1 : 0
@@ -1548,43 +1619,6 @@ resource "aws_cloudwatch_event_target" "ecs_deployment_notifications" {
 
 
 
-resource "aws_cloudwatch_event_rule" "ecs_spot_placement_failure" {
-  depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (var.ecs_spot_interruption && var.enabled) ? 1 : 0
-
-  name          = "marbot-basic-ecs-spot-placement-failure-${random_id.id8.hex}"
-  description   = "ECS service scheduler was unable to acquire any Fargate Spot capacity. (created by marbot)"
-  tags          = var.tags
-  event_pattern = <<JSON
-{
-  "source": [ 
-    "aws.ecs"
-  ],
-  "detail-type": [
-    "ECS Service Action"
-  ],
-  "detail": {
-    "eventName": [
-      "SERVICE_TASK_PLACEMENT_FAILURE"
-    ],
-    "reason": [
-      "RESOURCE:FARGATE"
-    ]
-  }
-}
-JSON
-}
-
-resource "aws_cloudwatch_event_target" "ecs_spot_placement_failure" {
-  count = (var.ecs_spot_interruption && var.enabled) ? 1 : 0
-
-  rule      = join("", aws_cloudwatch_event_rule.ecs_spot_placement_failure.*.name)
-  target_id = "marbot"
-  arn       = join("", aws_sns_topic.marbot.*.arn)
-}
-
-
-
 resource "aws_cloudwatch_event_rule" "ecs_spot_interruption" {
   depends_on = [aws_sns_topic_subscription.marbot]
   count      = (var.ecs_spot_interruption && var.enabled) ? 1 : 0
@@ -1602,6 +1636,7 @@ resource "aws_cloudwatch_event_rule" "ecs_spot_interruption" {
   ],
   "detail": {
     "stopCode": [
+      "SpotInterruption",
       "TerminationNotice"
     ]
   }
@@ -1616,6 +1651,8 @@ resource "aws_cloudwatch_event_target" "ecs_spot_interruption" {
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
+
+
 
 resource "aws_cloudwatch_event_rule" "macie_finding" {
   depends_on = [aws_sns_topic_subscription.marbot]
