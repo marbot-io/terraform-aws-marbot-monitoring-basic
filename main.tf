@@ -2041,18 +2041,21 @@ resource "aws_cloudwatch_event_rule" "ecr_image_scan_finding" {
   tags          = var.tags
   event_pattern = <<JSON
 {
-  "source": [ 
+  "source": [
     "aws.ecr"
   ],
   "detail-type": [
     "ECR Image Scan"
   ],
   "detail": {
+    "scan-status": ["COMPLETE"],
     "finding-severity-counts": {
-      "CRITICAL": [{"exists": false}, {"numeric": [">", 0]}],
-      "HIGH": [{"exists": false}, {"numeric": [">", 0]}],
-      "MEDIUM": [{"exists": false}, {"numeric": [">", 0]}],
-      "UNDEFINED": [{"exists": false}, {"numeric": [">", 0]}]
+      "$or": [
+        {"CRITICAL": [{"numeric": [">", 0]}]},
+        {"HIGH": [{"numeric": [">", 0]}]},
+        {"MEDIUM": [{"numeric": [">", 0]}]},
+        {"UNDEFINED": [{"numeric": [">", 0]}]}
+      ]
     }
   }
 }
