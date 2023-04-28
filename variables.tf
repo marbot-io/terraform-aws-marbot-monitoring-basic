@@ -9,6 +9,12 @@ variable "enabled" {
   default     = true
 }
 
+variable "module_version_monitoring_enabled" {
+  type        = bool
+  description = "Report the module version back to marbot to notify if updates are available."
+  default     = true
+}
+
 variable "tags" {
   description = "A map of tags to add to all resources"
   type        = map(string)
