@@ -2572,3 +2572,30 @@ resource "aws_cloudwatch_event_target" "elastic_beanstalk_failed" {
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
+
+resource "aws_cloudwatch_event_rule" "inspector2_finding" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.inspector2_finding && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-inspector2-finding-${random_id.id8.hex}"
+  description   = "Inspector 2 Finding (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [
+    "aws.inspector2"
+  ],
+  "detail-type": [
+    "Inspector2 Finding"
+  ]
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "inspector2_finding" {
+  count = (var.inspector2_finding && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.inspector2_finding.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
