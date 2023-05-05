@@ -2587,7 +2587,18 @@ resource "aws_cloudwatch_event_rule" "inspector2_finding" {
   ],
   "detail-type": [
     "Inspector2 Finding"
-  ]
+  ],
+  "detail": {
+    "severity": [
+      "MEDIUM",
+      "HIGH",
+      "CRITICAL",
+      "UNTRIAGED"
+    ],
+    "status": [
+      "ACTIVE"
+    ]
+  }
 }
 JSON
 }
