@@ -365,12 +365,12 @@ variable "elastic_beanstalk_failed" {
 
 variable "inspector2_finding" {
   type        = bool
-  description = "Get notified about Inspector 2 findings."
+  description = "Receive an alert, if an Inspector finding is created."
   default     = true
 }
 
 variable "stage" {
   type        = string
   description = "marbot stage (never change this!)."
-  default     = "dev"
+  default     = "v1"
 }
