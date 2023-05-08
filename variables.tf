@@ -363,6 +363,12 @@ variable "elastic_beanstalk_failed" {
   default     = true
 }
 
+variable "inspector2_finding" {
+  type        = bool
+  description = "Receive an alert, if an Inspector finding is created."
+  default     = true
+}
+
 variable "stage" {
   type        = string
   description = "marbot stage (never change this!)."

@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.26.0",
+  "Version": "0.27.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -2569,6 +2569,44 @@ resource "aws_cloudwatch_event_target" "elastic_beanstalk_failed" {
   count = (var.elastic_beanstalk_failed && var.enabled) ? 1 : 0
 
   rule      = join("", aws_cloudwatch_event_rule.elastic_beanstalk_failed.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
+
+resource "aws_cloudwatch_event_rule" "inspector2_finding" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.inspector2_finding && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-inspector2-finding-${random_id.id8.hex}"
+  description   = "Inspector 2 Finding (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [
+    "aws.inspector2"
+  ],
+  "detail-type": [
+    "Inspector2 Finding"
+  ],
+  "detail": {
+    "severity": [
+      "MEDIUM",
+      "HIGH",
+      "CRITICAL",
+      "UNTRIAGED"
+    ],
+    "status": [
+      "ACTIVE"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "inspector2_finding" {
+  count = (var.inspector2_finding && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.inspector2_finding.*.name)
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
