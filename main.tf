@@ -142,7 +142,7 @@ resource "aws_cloudwatch_event_target" "monitoring_jump_start_connection" {
 {
   "Type": "monitoring-jump-start-tf-connection",
   "Module": "basic",
-  "Version": "0.27.0",
+  "Version": "0.28.0",
   "Partition": "${data.aws_partition.current.partition}",
   "AccountId": "${data.aws_caller_identity.current.account_id}",
   "Region": "${data.aws_region.current.name}"
@@ -368,7 +368,7 @@ resource "aws_cloudwatch_metric_alarm" "trusted_advisor_service_limits" {
 
 resource "aws_budgets_budget" "cost" {
   depends_on = [aws_sns_topic_subscription.marbot]
-  count      = (data.aws_region.current.name == "us-east-1" && var.budget_threshold >= 0 && var.enabled) ? 1 : 0
+  count      = (data.aws_region.current.name == "us-east-1" && var.budget == "static" && var.budget_threshold >= 0 && var.enabled) ? 1 : 0
 
   name_prefix       = "marbot"
   budget_type       = "COST"
@@ -398,13 +398,52 @@ resource "aws_budgets_budget" "cost" {
     notification_type         = "ACTUAL"
     subscriber_sns_topic_arns = [join("", aws_sns_topic.marbot.*.arn)]
   }
+}
+
+resource "aws_budgets_budget" "cost_auto_adjust" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (data.aws_region.current.name == "us-east-1" && var.budget == "auto_adjust" && var.enabled) ? 1 : 0
+
+  name_prefix       = "marbot"
+  budget_type       = "COST"
+  limit_amount      = 0
+  limit_unit        = "USD"
+  time_unit         = "MONTHLY"
+  time_period_start = "2019-01-01_12:00"
+
+  auto_adjust_data {
+    auto_adjust_type = "HISTORICAL"
+    historical_options {
+      budget_adjustment_period = 6
+    }
+  }
+
+  cost_types {
+    include_credit             = false
+    include_discount           = true
+    include_other_subscription = false
+    include_recurring          = false
+    include_refund             = false
+    include_subscription       = true
+    include_support            = false
+    include_tax                = false
+    include_upfront            = false
+    use_amortized              = false
+    use_blended                = false
+  }
 
   notification {
     comparison_operator       = "GREATER_THAN"
     threshold                 = 100
     threshold_type            = "PERCENTAGE"
-    notification_type         = "FORECASTED"
+    notification_type         = "ACTUAL"
     subscriber_sns_topic_arns = [join("", aws_sns_topic.marbot.*.arn)]
+  }
+
+  lifecycle {
+    ignore_changes = [
+      limit_amount
+    ]
   }
 }
 
