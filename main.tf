@@ -2649,3 +2649,38 @@ resource "aws_cloudwatch_event_target" "inspector2_finding" {
   target_id = "marbot"
   arn       = join("", aws_sns_topic.marbot.*.arn)
 }
+
+resource "aws_cloudwatch_event_rule" "internetmonitoring_health" {
+  depends_on = [aws_sns_topic_subscription.marbot]
+  count      = (var.internetmonitoring_health && var.enabled) ? 1 : 0
+
+  name          = "marbot-basic-internetmonitoring-health-${random_id.id8.hex}"
+  description   = "CloudWatch Internet Monitoring Health Event (created by marbot)"
+  tags          = var.tags
+  event_pattern = <<JSON
+{
+  "source": [
+    "aws.internetmonitor"
+  ],
+  "detail-type": [
+    "Health Event Created"
+  ],
+  "detail": {
+    "ActionType": [
+      "CREATE"
+    ],
+    "Status": [
+      "ACTIVE"
+    ]
+  }
+}
+JSON
+}
+
+resource "aws_cloudwatch_event_target" "internetmonitoring_health" {
+  count = (var.internetmonitoring_health && var.enabled) ? 1 : 0
+
+  rule      = join("", aws_cloudwatch_event_rule.internetmonitoring_health.*.name)
+  target_id = "marbot"
+  arn       = join("", aws_sns_topic.marbot.*.arn)
+}
