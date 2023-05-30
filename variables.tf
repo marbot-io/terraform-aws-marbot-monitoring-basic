@@ -375,6 +375,12 @@ variable "inspector2_finding" {
   default     = true
 }
 
+variable "internetmonitoring_health" {
+  type        = bool
+  description = "Receive an alert, if a CloudWatch Internet Monitor health event is created."
+  default     = true
+}
+
 variable "stage" {
   type        = string
   description = "marbot stage (never change this!)."
