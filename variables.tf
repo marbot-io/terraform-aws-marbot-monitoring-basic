@@ -371,7 +371,7 @@ variable "elastic_beanstalk_failed" {
 
 variable "inspector2_finding" {
   type        = bool
-  description = "Receive an alert, if an Inspector finding is created."
+  description = "Receive an alert, if an Inspector2 finding is created."
   default     = true
 }
 

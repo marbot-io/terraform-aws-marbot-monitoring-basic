@@ -2080,7 +2080,7 @@ resource "aws_cloudwatch_event_rule" "ecr_image_scan_finding" {
   count      = (var.ecr_image_scan_finding && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-ecr-image-scan-finding-${random_id.id8.hex}"
-  description   = "Findings from AWS ECR Image Scans. (created by marbot)"
+  description   = "Findings (severity >= medium) from AWS ECR Image Scans. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
 {
@@ -2621,7 +2621,7 @@ resource "aws_cloudwatch_event_rule" "inspector2_finding" {
   count      = (var.inspector2_finding && var.enabled) ? 1 : 0
 
   name          = "marbot-basic-inspector2-finding-${random_id.id8.hex}"
-  description   = "Inspector 2 Finding (created by marbot)"
+  description   = "Findings (severity >= medium) from Amazon Inspector2. (created by marbot)"
   tags          = var.tags
   event_pattern = <<JSON
 {
