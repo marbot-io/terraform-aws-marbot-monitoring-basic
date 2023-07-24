@@ -7,6 +7,10 @@ terraform {
     }
     random = {
       source  = "hashicorp/random"
+      version = ">= 3.1"
+    }
+    archive = {
+      source  = "hashicorp/archive"
       version = ">= 2.2"
     }
   }
@@ -564,7 +568,7 @@ resource "aws_iam_role" "cloud_watch_alarm_filter" {
   count = ((var.cloud_watch_alarm_fired || var.cloud_watch_alarm_orphaned || var.cloud_watch_alarm_auto_close) && var.enabled) ? 1 : 0
 
   name_prefix          = "marbot"
-  permissions_boundary = var.permissions_boundary_policy_arn
+  permissions_boundary = var.permissions_boundary_policy_arn == "" ? null : var.permissions_boundary_policy_arn
 
   assume_role_policy = <<EOF
 {
@@ -1739,7 +1743,7 @@ resource "aws_iam_role" "security_hub_workflow" {
   count = (var.security_hub_finding && var.enabled) ? 1 : 0
 
   name_prefix          = "marbot"
-  permissions_boundary = var.permissions_boundary_policy_arn
+  permissions_boundary = var.permissions_boundary_policy_arn == "" ? null : var.permissions_boundary_policy_arn
 
   assume_role_policy = <<EOF
 {
