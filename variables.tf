@@ -315,24 +315,6 @@ variable "code_commit_pull_request_notifications" {
   default     = true
 }
 
-variable "ami_update_notification_ecs_optimized" {
-  type        = bool
-  description = "Receive a notification, if a new ECS optimized AMI is released (works in us-east-1 only)."
-  default     = false
-}
-
-variable "ami_update_notification_amazon_linux" {
-  type        = bool
-  description = "Receive a notification, if a new Amazon Linux AMI is released (works in us-east-1 only)."
-  default     = false
-}
-
-variable "ami_update_notification_amazon_linux2" {
-  type        = bool
-  description = "Receive a notification, if a new Amazon Linux 2 AMI is released (works in us-east-1 only)."
-  default     = true
-}
-
 variable "acm_certificate_approaching_expiration" {
   type        = bool
   description = "Receive a notification, if an ACM certificate approaches expiration."
