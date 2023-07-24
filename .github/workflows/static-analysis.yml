@@ -1,0 +1,24 @@
+---
+name: static-analysis
+on: [push]
+defaults:
+  run:
+    shell: bash
+jobs:
+  unit-test:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+    - uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: ~1
+    - run: terraform fmt -check
+    - run: |
+        terraform init
+        terraform validate
+    - uses: terraform-linters/setup-tflint@v3
+      with:
+        tflint_version: v0.47.0
+    - run: |
+        tflint --init
+        tflint -f compact
