@@ -1,11 +1,11 @@
 ---
-name: static-analysis
+name: Static Analysis
 on: [push]
 defaults:
   run:
     shell: bash
 jobs:
-  unit-test:
+  run:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
